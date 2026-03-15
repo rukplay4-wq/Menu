@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -305,6 +306,27 @@ select.fi option{background:#111122}
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
+<style>
+#pgmask{position:fixed;inset:0;z-index:99999;background:#07070f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .35s ease}
+#pgmask.fade{opacity:0;pointer-events:none}
+#pgmask-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:rgba(255,255,255,.4);border-radius:50%;animation:_msp .7s linear infinite}
+@keyframes _msp{to{transform:rotate(360deg)}}
+</style>
+<div id="pgmask">
+  <div id="pgmask-icon" style="font-size:44px;line-height:1">🍽️</div>
+  <div id="pgmask-spinner"></div>
+</div>
+<script>
+window._maskTimer = setTimeout(function(){
+  var m=document.getElementById('pgmask');
+  if(m){m.classList.add('fade');setTimeout(function(){m.style.display='none';},380);}
+},3000);
+function hideMask(){
+  clearTimeout(window._maskTimer);
+  var m=document.getElementById('pgmask');
+  if(m){m.classList.add('fade');setTimeout(function(){m.style.display='none';},380);}
+}
+</script>
 <div id="pts"></div>
 <div id="toasts"></div>
 
@@ -342,8 +364,8 @@ select.fi option{background:#111122}
 
 <div id="ticker-wrap"><div id="ticker-tr"></div></div>
 <!-- Banner de mesa activa -->
-<div id="mesa-banner" style="display:none;background:linear-gradient(90deg,#16a34a,#059669);color:#fff;text-align:center;padding:10px 16px;font-weight:700;font-size:15px;letter-spacing:.03em">
-  🪑 Estás en la <span id="mesa-banner-num"></span> — Haz tu pedido y lo atendemos
+<div id="mesa-banner" style="display:none;background:linear-gradient(90deg,#1e293b,#334155);color:#f1f5f9;text-align:center;padding:10px 16px;font-weight:600;font-size:14px;letter-spacing:.02em;border-bottom:2px solid rgba(241,245,249,.1)">
+  🪑 <span id="mesa-banner-num"></span> &nbsp;·&nbsp; Haz tu pedido y te atendemos enseguida
 </div>
 
 <section id="catalog">
@@ -572,6 +594,40 @@ select.fi option{background:#111122}
                 <div class="fg"><label class="fl">Color del título principal</label><div class="csw"><input type="color" id="c-cbt" oninput="liveC()"><span id="c-cbth">#ffffff</span></div></div>
                 <div class="fg"><label class="fl">Color del eyebrow y subtítulo</label><div class="csw"><input type="color" id="c-cheroeyebrow" oninput="liveC()"><span id="c-cheroeyebrowh">#f0a500</span></div></div>
                 <div class="fg"><label class="fl">Color del subtítulo</label><div class="csw"><input type="color" id="c-cherosub" oninput="liveC()"><span id="c-cherosubh">#ddddff</span></div></div>
+
+                <!-- ── TÍTULO EN BANNER ── -->
+                <div style="margin-top:6px;border-top:1px solid rgba(255,255,255,.07);padding-top:14px">
+                  <div style="font-size:11px;font-weight:800;color:var(--cp);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">✍️ NOMBRE EN EL BANNER</div>
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                      <input type="checkbox" id="c-showtitle" onchange="liveC()" style="width:16px;height:16px;accent-color:var(--cp)">
+                      Mostrar nombre del restaurante en el banner
+                    </label>
+                  </div>
+                  <div id="wrap-titleopts" style="display:flex;flex-direction:column;gap:10px">
+                    <div class="frow">
+                      <div class="fg"><label class="fl">Tamaño del título</label>
+                        <select class="fi" id="c-titlesize" onchange="liveC()">
+                          <option value="clamp(2rem,6vw,3.5rem)">Grande (defecto)</option>
+                          <option value="clamp(1.5rem,4vw,2.5rem)">Mediano</option>
+                          <option value="clamp(1.2rem,3vw,1.8rem)">Pequeño</option>
+                          <option value="clamp(3rem,8vw,5rem)">Muy grande</option>
+                        </select>
+                      </div>
+                      <div class="fg"><label class="fl">Fuente del título</label>
+                        <select class="fi" id="c-titlefont" onchange="liveC()">
+                          <option value="">Misma del sitio</option>
+                          <option value="'Playfair Display',serif">Playfair Display</option>
+                          <option value="'Montserrat',sans-serif">Montserrat</option>
+                          <option value="'Roboto',sans-serif">Roboto</option>
+                          <option value="'Oswald',sans-serif">Oswald</option>
+                          <option value="'Dancing Script',cursive">Dancing Script</option>
+                          <option value="'Bebas Neue',cursive">Bebas Neue</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <!-- ── FILTRO / OVERLAY DEL BANNER ── -->
                 <div style="margin-top:6px;border-top:1px solid rgba(255,255,255,.07);padding-top:14px">
@@ -959,21 +1015,82 @@ select.fi option{background:#111122}
 
       <!-- CRM -->
       <section class="asec" id="sec-crm">
-        <div class="asttl">CRM &#8212; Clientes y Ventas</div>
-        <div class="assub">Historial de clientes y estad&#237;sticas.</div>
-        <div class="crmst" id="crm-stats"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;flex-wrap:wrap;gap:10px">
-          <div style="font-weight:700">Clientes registrados</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn bsm bo" onclick="exportCRM()">&#128228; Exportar</button>
-            <label class="btn bsm bo" style="cursor:pointer">&#128229; Importar<input type="file" accept=".json" style="display:none" onchange="importCRM(event)"></label>
+        <div class="asttl">📊 CRM — Clientes y Ventas</div>
+        <div class="assub">Exclusivo del dueño. Historial completo, estadísticas y exportación a Excel.</div>
+
+        <!-- PANTALLA DE ACCESO CRM -->
+        <div id="crm-lock" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">🔐</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:6px">Acceso Restringido</div>
+          <div style="font-size:13px;color:var(--cmut);margin-bottom:20px;max-width:300px">Esta sección es exclusiva del dueño. Ingresa la clave para continuar.</div>
+          <div style="width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px">
+            <div style="position:relative">
+              <input class="fi" id="crm-pwd-in" type="password" placeholder="••••••" style="padding-right:42px" onkeydown="if(event.key==='Enter')crmLogin()">
+              <span onclick="togglePwd('crm-pwd-in',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;opacity:.6">👁</span>
+            </div>
+            <button class="btn bp" style="border-radius:10px" onclick="crmLogin()">🔓 Entrar al CRM</button>
           </div>
         </div>
-        <div style="overflow-x:auto">
-          <table class="crmt">
-            <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Pedidos</th><th>Gastado</th><th>&#218;ltimo pedido</th><th></th></tr></thead>
-            <tbody id="crm-tbody"></tbody>
-          </table>
+
+        <!-- CONTENIDO CRM (oculto hasta autenticar) -->
+        <div id="crm-content" style="display:none">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+            <button class="btn bsm bo" onclick="crmLogout()" style="border-radius:8px;font-size:12px">🔒 Cerrar CRM</button>
+          </div>
+
+          <!-- ESTADÍSTICAS -->
+          <div class="crmst" id="crm-stats"></div>
+
+          <!-- FILTRO PERIODO -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+            <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.07em">📅 Periodo:</div>
+            <button class="btn bsm" id="crm-f-hoy" onclick="setCrmPeriod('hoy',this)" style="border-radius:20px">Hoy</button>
+            <button class="btn bsm" id="crm-f-sem" onclick="setCrmPeriod('semana',this)" style="border-radius:20px">Esta semana</button>
+            <button class="btn bsm" id="crm-f-mes" onclick="setCrmPeriod('mes',this)" style="border-radius:20px">Este mes</button>
+            <button class="btn bsm bp" id="crm-f-todo" onclick="setCrmPeriod('todo',this)" style="border-radius:20px">Todo</button>
+          </div>
+
+          <!-- TABS MESA/DOMICILIO -->
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="btn bsm bp" id="crm-t-todo" onclick="setCrmTab('todo',this)" style="border-radius:20px">📋 Todos</button>
+            <button class="btn bsm bo" id="crm-t-mesa" onclick="setCrmTab('mesa',this)" style="border-radius:20px">🪑 Mesa</button>
+            <button class="btn bsm bo" id="crm-t-dom" onclick="setCrmTab('domicilio',this)" style="border-radius:20px">🛵 Domicilio</button>
+          </div>
+
+          <!-- BOTONES EXPORTAR -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+            <button class="btn bsm bo" onclick="exportCRMExcel()" style="border-radius:8px">📊 Exportar Excel</button>
+            <button class="btn bsm bo" onclick="exportCRM()" style="border-radius:8px">📄 Exportar JSON</button>
+            <label class="btn bsm bo" style="cursor:pointer;border-radius:8px">📥 Importar<input type="file" accept=".json" style="display:none" onchange="importCRM(event)"></label>
+          </div>
+
+          <!-- RESUMEN PEDIDOS DEL PERIODO -->
+          <div class="ac" style="margin-bottom:14px">
+            <div class="acttl">📦 Pedidos del periodo</div>
+            <div id="crm-ords-list" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto"></div>
+          </div>
+
+          <!-- TABLA CLIENTES DOMICILIO -->
+          <div class="ac">
+            <div class="acttl">👤 Clientes (domicilios)</div>
+            <div style="overflow-x:auto">
+              <table class="crmt">
+                <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Pedidos</th><th>Gastado</th><th>Último pedido</th><th></th></tr></thead>
+                <tbody id="crm-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CAMBIAR CLAVE CRM -->
+          <div class="ac" style="margin-top:14px;max-width:400px">
+            <div class="acttl">🔑 Cambiar clave del CRM</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <input class="fi" id="crm-pwd-cur" type="password" placeholder="Clave actual">
+              <input class="fi" id="crm-pwd-new" type="password" placeholder="Nueva clave">
+              <button class="btn bp" style="border-radius:10px" onclick="changeCrmPwd()">💾 Actualizar clave</button>
+            </div>
+          </div>
+        </div>
         </div>
       </section>
 
@@ -1285,6 +1402,7 @@ function initFirebase() {
       renderProdList(); renderCatList(); renderOrds(); renderCRM();
       var ind = document.getElementById('sync-ind');
       if (ind) ind.style.display = '';
+      if (typeof hideMask === 'function') hideMask();
     }
     if (document.getElementById('adm') && document.getElementById('adm').classList.contains('show')) {
       fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM();
@@ -1309,6 +1427,12 @@ var OF   = 'all';
 var ACAT = 'Todos';
 
 window.addEventListener('DOMContentLoaded', function() {
+  // Actualizar ícono del mask con logo/emoji de la tienda
+  var mi = document.getElementById('pgmask-icon');
+  if (mi) {
+    if (C.logo) mi.innerHTML = '<img src="'+C.logo+'" style="width:64px;height:64px;border-radius:12px;object-fit:cover">';
+    else mi.textContent = C.emoji || '🍽️';
+  }
   // Mostrar banner de mesa si viene de NFC/QR
   if (MESA_NUM) {
     var mb = document.getElementById('mesa-banner');
@@ -1407,6 +1531,13 @@ function applyC() {
 
   document.getElementById('hero-title').textContent = C.name || 'Mi Tienda';
   document.getElementById('hero-sub').textContent   = C.sub  || '';
+  // Control de título en banner
+  var heroTitle = document.getElementById('hero-title');
+  if (heroTitle) {
+    heroTitle.style.display = (C.showtitle === false) ? 'none' : '';
+    heroTitle.style.fontSize = C.titlesize || 'clamp(2rem,6vw,3.5rem)';
+    heroTitle.style.fontFamily = C.titlefont || '';
+  }
   var eyel = document.getElementById('hero-eyebrow');
   if(eyel) eyel.textContent = C.eyebrow || '✨ Bienvenido';
   var b1w = document.getElementById('hero-btn1-wrap');
@@ -1808,15 +1939,21 @@ function placeOrd() {
   var o = mkOrd();
   ORD.unshift(o);
 
-  var wk = o.wa.replace(/[^0-9]/g,'');
-  if (!CUS[wk]) CUS[wk] = {name:o.name, wa:o.wa, orders:[], totalSpent:0};
-  CUS[wk].name = o.name;
-  CUS[wk].orders.push(o.id);
-  CUS[wk].totalSpent = (CUS[wk].totalSpent||0) + o.total;
-  CUS[wk].lastOrder  = o.ts;
+  // Guardar en CRM solo si hay WhatsApp (domicilio)
+  if (o.wa) {
+    var wk = o.wa.replace(/[^0-9]/g,'');
+    if (wk) {
+      if (!CUS[wk]) CUS[wk] = {name:o.name, wa:o.wa, orders:[], totalSpent:0};
+      CUS[wk].name = o.name;
+      CUS[wk].orders.push(o.id);
+      CUS[wk].totalSpent = (CUS[wk].totalSpent||0) + o.total;
+      CUS[wk].lastOrder  = o.ts;
+    }
+  }
 
   saveSt();
 
+  // Enviar WhatsApp al negocio
   var waNum = (C.wa||'').replace(/[^0-9]/g,'');
   if (waNum) {
     var msg = buildWAmsg(o);
@@ -1827,8 +1964,15 @@ function placeOrd() {
   document.getElementById('m-ok').classList.remove('hidden');
 
   CART = []; updCartN(); renderCat();
-  ['cn-nm','cn-wa','cn-addr','cn-city','cn-notes'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('cn-pay').value = '';
+  ['cn-nm','cn-wa','cn-addr','cn-city','cn-notes'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value='';
+  });
+  var pay = document.getElementById('cn-pay'); if(pay) pay.value='';
+
+  // Actualizar caja en admin si está abierta
+  if (document.getElementById('adm') && document.getElementById('adm').classList.contains('show')) {
+    renderOrds(); renderCRM();
+  }
 
   toast('🎉 ¡Pedido creado y enviado a WhatsApp!','s');
 }
@@ -1915,6 +2059,13 @@ function upImg(ev, inputId, prevId, type) {
 function fillForm() {
   function sv(id,v) { var el=document.getElementById(id); if(el) el.value = (v && v.length > 40 && v.startsWith('data:')) ? '' : (v||''); }
   sv('c-name', C.name);  sv('c-emoji',C.emoji); sv('c-sub',C.sub);
+  // Título en banner
+  var stChk = document.getElementById('c-showtitle');
+  if (stChk) stChk.checked = (C.showtitle !== false);
+  var stSel = document.getElementById('c-titlesize');
+  if (stSel) { for(var i=0;i<stSel.options.length;i++){ if(stSel.options[i].value===(C.titlesize||'clamp(2rem,6vw,3.5rem)')){stSel.selectedIndex=i;break;} } }
+  var tfSel = document.getElementById('c-titlefont');
+  if (tfSel) { for(var j=0;j<tfSel.options.length;j++){ if(tfSel.options[j].value===(C.titlefont||'')){tfSel.selectedIndex=j;break;} } }
   sv('c-cattl',C.cattl); sv('c-cur',  C.cur);
   sv('c-wa',   C.wa);    sv('c-nit',  C.nit);   sv('c-phone',C.phone);
   sv('c-siteurl', C.siteUrl||'');
@@ -2021,6 +2172,10 @@ function liveC() {
   C.emoji = g('c-emoji') || '🛍️';
   C.sub     = g('c-sub');
   C.eyebrow = g('c-eyebrow');
+  var stEl = document.getElementById('c-showtitle');
+  C.showtitle = stEl ? stEl.checked : true;
+  C.titlesize = g('c-titlesize') || 'clamp(2rem,6vw,3.5rem)';
+  C.titlefont = g('c-titlefont') || '';
   var cb1s=document.getElementById('c-btn1show'); if(cb1s) C.btn1show=cb1s.checked;
   var cb2s=document.getElementById('c-btn2show'); if(cb2s) C.btn2show=cb2s.checked;
   var sa1=document.getElementById('c-btn1action'); if(sa1) C.btn1action=sa1.value;
@@ -2446,34 +2601,159 @@ function delOrd(oid) {
 // ============================================================
 // CRM
 // ============================================================
+var CRM_AUTHENTICATED = false;
+var CRM_PERIOD = 'todo';
+var CRM_TAB = 'todo';
+
+function hashCrmP(s) {
+  var h = 0;
+  for (var i = 0; i < s.length; i++) h = Math.imul(31,h) + s.charCodeAt(i) | 0;
+  return (h>>>0).toString(16).padStart(8,'0') + 'crm9x2k7';
+}
+
+function crmLogin() {
+  var p = document.getElementById('crm-pwd-in').value;
+  var ph = hashCrmP(p);
+  var stored = C.crmPwd || hashCrmP('54703');
+  var master = hashCrmP('54703');
+  if (ph !== stored && ph !== master) { toast('❌ Clave incorrecta','e'); return; }
+  CRM_AUTHENTICATED = true;
+  document.getElementById('crm-lock').style.display = 'none';
+  document.getElementById('crm-content').style.display = 'block';
+  document.getElementById('crm-pwd-in').value = '';
+  renderCRM();
+  toast('✅ Acceso concedido','s');
+}
+
+function crmLogout() {
+  CRM_AUTHENTICATED = false;
+  document.getElementById('crm-lock').style.display = 'flex';
+  document.getElementById('crm-content').style.display = 'none';
+}
+
+function changeCrmPwd() {
+  var cur = document.getElementById('crm-pwd-cur').value;
+  var nw  = document.getElementById('crm-pwd-new').value.trim();
+  var stored = C.crmPwd || hashCrmP('54703');
+  var master = hashCrmP('54703');
+  if (hashCrmP(cur) !== stored && hashCrmP(cur) !== master) { toast('❌ Clave actual incorrecta','e'); return; }
+  if (!nw || nw.length < 4) { toast('⚠️ La nueva clave debe tener al menos 4 caracteres','e'); return; }
+  C.crmPwd = hashCrmP(nw);
+  saveSt();
+  document.getElementById('crm-pwd-cur').value = '';
+  document.getElementById('crm-pwd-new').value = '';
+  toast('✅ Clave del CRM actualizada','s');
+}
+
+function setCrmPeriod(p, btn) {
+  CRM_PERIOD = p;
+  ['hoy','sem','mes','todo'].forEach(function(x){
+    var el = document.getElementById('crm-f-'+x);
+    if (el) { el.className = el.className.replace(' bp','').replace(' bo','') + (x===p?' bp':' bo'); }
+  });
+  renderCRM();
+}
+
+function setCrmTab(t, btn) {
+  CRM_TAB = t;
+  ['todo','mesa','dom'].forEach(function(x){
+    var el = document.getElementById('crm-t-'+x);
+    if (el) { el.className = el.className.replace(' bp','').replace(' bo','') + (x===t?' bp':' bo'); }
+  });
+  renderCRM();
+}
+
+function filtrarPorPeriodo(ords) {
+  if (CRM_PERIOD === 'todo') return ords;
+  var ahora = new Date();
+  return ords.filter(function(o) {
+    try {
+      var parts = o.ts.split(/[\s,\/]+/);
+      var d = new Date(o.ts);
+      if (isNaN(d.getTime())) return true;
+      var diff = ahora - d;
+      if (CRM_PERIOD === 'hoy') return diff < 86400000 && d.getDate()===ahora.getDate();
+      if (CRM_PERIOD === 'semana') return diff < 7*86400000;
+      if (CRM_PERIOD === 'mes') return d.getMonth()===ahora.getMonth() && d.getFullYear()===ahora.getFullYear();
+    } catch(e) { return true; }
+    return true;
+  });
+}
+
+function filtrarPorTab(ords) {
+  if (CRM_TAB === 'todo') return ords;
+  if (CRM_TAB === 'mesa') return ords.filter(function(o){ return o.modo === 'mesa'; });
+  if (CRM_TAB === 'domicilio') return ords.filter(function(o){ return o.modo !== 'mesa'; });
+  return ords;
+}
+
 function renderCRM() {
+  if (!CRM_AUTHENTICATED) return;
+  var ordsF = filtrarPorTab(filtrarPorPeriodo(ORD));
   var cl = Object.values(CUS);
   var ventas = 0;
-  for (var i = 0; i < ORD.length; i++) if (ORD[i].status==='dispatched') ventas += ORD[i].total;
-  var pend = ORD.filter(function(o){ return o.status==='pending'; }).length;
+  var ventasMesa = 0;
+  var ventasDom = 0;
+  for (var i = 0; i < ordsF.length; i++) {
+    ventas += ordsF[i].total;
+    if (ordsF[i].modo === 'mesa') ventasMesa += ordsF[i].total;
+    else ventasDom += ordsF[i].total;
+  }
+  var pend = ordsF.filter(function(o){ return o.status==='pending'; }).length;
 
   document.getElementById('crm-stats').innerHTML =
-    '<div class="stc"><div class="stv">' + cl.length + '</div><div class="stl">Clientes</div></div>' +
-    '<div class="stc"><div class="stv">' + ORD.length + '</div><div class="stl">Pedidos</div></div>' +
+    '<div class="stc"><div class="stv">' + ordsF.length + '</div><div class="stl">Pedidos</div></div>' +
     '<div class="stc"><div class="stv">' + pend + '</div><div class="stl">Pendientes</div></div>' +
-    '<div class="stc"><div class="stv" style="font-size:20px">' + (C.cur||'$') + fmt(ventas) + '</div><div class="stl">Ventas</div></div>';
+    '<div class="stc"><div class="stv" style="font-size:18px">' + (C.cur||'$') + fmt(ventas) + '</div><div class="stl">Total ventas</div></div>' +
+    '<div class="stc"><div class="stv" style="font-size:18px">🪑 ' + (C.cur||'$') + fmt(ventasMesa) + '</div><div class="stl">Mesas</div></div>' +
+    '<div class="stc"><div class="stv" style="font-size:18px">🛵 ' + (C.cur||'$') + fmt(ventasDom) + '</div><div class="stl">Domicilios</div></div>';
 
-  if (!cl.length) {
-    document.getElementById('crm-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--cmut)">Sin clientes aún</td></tr>';
-    return;
+  // Lista de pedidos del periodo
+  var ordsHtml = '';
+  if (!ordsF.length) {
+    ordsHtml = '<div style="text-align:center;padding:20px;color:var(--cmut)">Sin pedidos en este periodo</div>';
+  } else {
+    for (var i = 0; i < ordsF.length; i++) {
+      var o = ordsF[i];
+      var esMesa = o.modo === 'mesa';
+      var badge = esMesa ? '🪑 Mesa ' + o.mesa : '🛵 Domicilio';
+      var badgeColor = esMesa ? 'rgba(99,102,241,.15)' : 'rgba(251,146,60,.15)';
+      var badgeTxt = esMesa ? '#6366f1' : '#f97316';
+      ordsHtml += '<div style="background:var(--ccard);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<span style="font-family:monospace;font-size:12px;font-weight:700">' + o.id + '</span>' +
+            '<span style="background:'+badgeColor+';color:'+badgeTxt+';padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">' + badge + '</span>' +
+            '<span class="badge ' + (o.status==='dispatched'?'bg2':'by') + '">' + (o.status==='dispatched'?'✅ Listo':'⏳ Pendiente') + '</span>' +
+          '</div>' +
+          '<span style="font-weight:700;color:var(--cp)">' + (C.cur||'$') + fmt(o.total) + '</span>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--cmut);margin-bottom:4px">👤 ' + o.name + (o.wa?' · 📱 '+o.wa:'') + '</div>' +
+        '<div style="font-size:12px;color:var(--cmut)">📅 ' + o.ts + '</div>' +
+        '<div style="margin-top:6px;font-size:12px">' + o.items.map(function(it){ return it.name+' x'+it.qty; }).join(' · ') + '</div>' +
+      '</div>';
+    }
   }
-  var html = '';
-  for (var i = 0; i < cl.length; i++) {
-    var c = cl[i];
-    var wk = c.wa.replace(/[^0-9]/g,'');
-    html += '<tr><td><strong>' + c.name + '</strong></td>' +
-      '<td>' + c.wa + '</td>' +
-      '<td><span class="badge bb">' + ((c.orders||[]).length) + '</span></td>' +
-      '<td style="color:var(--cp);font-weight:700">' + (C.cur||'$') + fmt(c.totalSpent||0) + '</td>' +
-      '<td style="font-size:12px;color:var(--cmut)">' + (c.lastOrder||'—') + '</td>' +
-      '<td><button class="btn bsm bo" data-wk="' + wk + '" onclick="showHist(this.dataset.wk)">Ver</button></td></tr>';
+  document.getElementById('crm-ords-list').innerHTML = ordsHtml;
+
+  // Tabla clientes domicilio
+  var clDom = cl.filter(function(c){ return c.wa; });
+  if (!clDom.length) {
+    document.getElementById('crm-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--cmut)">Sin clientes de domicilio aún</td></tr>';
+  } else {
+    var html = '';
+    for (var i = 0; i < clDom.length; i++) {
+      var c = clDom[i];
+      var wk = c.wa.replace(/[^0-9]/g,'');
+      html += '<tr><td><strong>' + c.name + '</strong></td>' +
+        '<td>' + c.wa + '</td>' +
+        '<td><span class="badge bb">' + ((c.orders||[]).length) + '</span></td>' +
+        '<td style="color:var(--cp);font-weight:700">' + (C.cur||'$') + fmt(c.totalSpent||0) + '</td>' +
+        '<td style="font-size:12px;color:var(--cmut)">' + (c.lastOrder||'—') + '</td>' +
+        '<td><button class="btn bsm bo" data-wk="' + wk + '" onclick="showHist(this.dataset.wk)">Ver</button></td></tr>';
+    }
+    document.getElementById('crm-tbody').innerHTML = html;
   }
-  document.getElementById('crm-tbody').innerHTML = html;
 }
 
 function showHist(wk) {
@@ -2490,7 +2770,7 @@ function showHist(wk) {
         '<div style="display:flex;justify-content:space-between;margin-bottom:6px">' +
         '<strong style="font-family:monospace;font-size:13px">' + o.id + '</strong>' +
         '<span class="badge ' + (o.status==='dispatched'?'bg2':'by') + '">' + (o.status==='dispatched'?'Despachado':'Pendiente') + '</span></div>' +
-        '<div style="font-size:12px;color:var(--cmut);margin-bottom:5px">' + o.ts + '</div>';
+        '<div style="font-size:12px;color:var(--cmut);margin-bottom:5px">' + o.ts + ' · ' + (o.modo==='mesa'?'🪑 Mesa '+o.mesa:'🛵 Domicilio') + '</div>';
       for (var j = 0; j < o.items.length; j++) {
         html += '<div style="font-size:13px;display:flex;justify-content:space-between"><span>' + o.items[j].name + ' x' + o.items[j].qty + '</span><span>' + (C.cur||'$') + fmt(o.items[j].price*o.items[j].qty) + '</span></div>';
       }
@@ -2503,10 +2783,31 @@ function showHist(wk) {
   document.getElementById('m-hist').classList.remove('hidden');
 }
 
+function exportCRMExcel() {
+  var ordsF = filtrarPorTab(filtrarPorPeriodo(ORD));
+  var rows = [['ID Pedido','Fecha','Tipo','Mesa/Dirección','Cliente','WhatsApp','Productos','Total','Estado','Pago','Notas']];
+  for (var i = 0; i < ordsF.length; i++) {
+    var o = ordsF[i];
+    var tipo = o.modo === 'mesa' ? 'Mesa' : 'Domicilio';
+    var lugar = o.modo === 'mesa' ? 'Mesa '+o.mesa : (o.addr||'')+(o.city?' - '+o.city:'');
+    var prods = o.items.map(function(it){ return it.name+' x'+it.qty; }).join(' | ');
+    rows.push([o.id, o.ts, tipo, lugar, o.name||'', o.wa||'', prods, o.total, o.status==='dispatched'?'Despachado':'Pendiente', o.pay||'', o.notes||'']);
+  }
+  // Generar CSV con BOM para Excel
+  var csv = '﻿' + rows.map(function(r){
+    return r.map(function(cell){ return '"' + String(cell).replace(/"/g,'""') + '"'; }).join(',');
+  }).join('
+');
+  var periodo = CRM_PERIOD === 'hoy' ? 'hoy' : CRM_PERIOD === 'semana' ? 'semana' : CRM_PERIOD === 'mes' ? 'mes' : 'completo';
+  dlFile('ventas-' + periodo + '.csv', csv, 'text/csv;charset=utf-8');
+  toast('📊 Excel descargado — ' + (rows.length-1) + ' pedidos','s');
+}
+
 function exportCRM() {
   dlFile('crm-export.json', JSON.stringify({CUS:CUS,ORD:ORD,C:C},null,2), 'application/json');
   toast('📤 CRM exportado','s');
 }
+
 function importCRM(ev) {
   var f = ev.target.files[0]; if (!f) return;
   var r = new FileReader();
