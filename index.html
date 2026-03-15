@@ -1383,6 +1383,32 @@ function saveSt() {
 function initFirebase() {
   if (!db) return;
   var _loaded = false;
+
+  // Carga inmediata con get() — igual que la versión anterior que funcionaba
+  db.collection('tienda').doc(DOC_ID).get().then(function(doc) {
+    if (!doc.exists) return;
+    var data = doc.data();
+    if (!data) return;
+    if (data.C) { C = Object.assign({}, DC, data.C); }
+    if (data.P)    P    = data.P;
+    if (data.CATS) CATS = data.CATS;
+    if (data.ORD)  ORD  = data.ORD;
+    if (data.CUS)  CUS  = data.CUS;
+    try { localStorage.setItem(SK, JSON.stringify({C:C,P:P,CATS:CATS,ORD:ORD,CUS:CUS,_ts:Date.now()})); } catch(e) {}
+    applyC(); renderCat(); renderTicker();
+    if (!_loaded) {
+      _loaded = true;
+      renderProdList(); renderCatList(); renderOrds(); renderCRM();
+      var ind = document.getElementById('sync-ind');
+      if (ind) ind.style.display = '';
+      if (typeof hideMask === 'function') hideMask();
+    }
+    if (document.getElementById('adm') && document.getElementById('adm').classList.contains('show')) {
+      fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM();
+    }
+  }).catch(function(err){ console.warn('Firebase get error:', err); if (typeof hideMask === 'function') hideMask(); });
+
+  // Listener en tiempo real para cambios
   db.collection('tienda').doc(DOC_ID).onSnapshot(function(doc) {
     if (!doc.exists) return;
     var data = doc.data();
