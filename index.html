@@ -288,6 +288,29 @@ select.fi option{background:#111122}
 .confirm-box{background:rgba(47,133,90,.1);border:1px solid rgba(47,133,90,.3);border-radius:12px;padding:16px;margin-top:14px;text-align:center}
 .confirm-box p{font-size:13px;color:#68d391;margin-bottom:10px}
 
+/* ── RESPONSIVE DESKTOP ── */
+@media(min-width:1024px){
+  #hero{min-height:520px;padding:80px 40px}
+  .hcont{max-width:800px}
+  #hero-title{font-size:clamp(3rem,5vw,5rem)}
+  #catalog{padding:56px 40px}
+  #pgrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
+  .agrid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+  #adm-nav{width:220px;padding:16px 12px}
+  .an{font-size:14px;padding:11px 14px}
+  #adm-main{padding:28px 36px}
+  .ocard{max-width:700px}
+  .crmst{grid-template-columns:repeat(5,1fr)}
+  #hdr{padding:0 32px;min-height:72px}
+  #hdr-name{font-size:20px}
+  .mbox{max-width:640px}
+  #sftr{padding:48px 40px 24px}
+}
+@media(min-width:1440px){
+  #pgrid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px}
+  #hero-title{font-size:clamp(4rem,5vw,6rem)}
+  #adm-main{padding:32px 48px}
+}
 @media(max-width:660px){
   #adm-nav{position:fixed;bottom:0;left:0;right:0;width:100%;flex-direction:row;overflow-x:auto;border-right:none;border-top:1px solid rgba(255,255,255,.06);padding:5px;z-index:10;gap:2px}
   .an{flex-direction:column;gap:2px;padding:6px 7px;font-size:10px;min-width:54px;text-align:center}
@@ -1003,8 +1026,10 @@ function hideMask(){
         <div class="assub">Al despachar, se abre WhatsApp autom&#225;ticamente con el mensaje completo al cliente.</div>
         <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
           <button class="btn bsm bp" id="of-all" onclick="filtOrds('all')">Todos</button>
-          <button class="btn bsm bo" id="of-pend" onclick="filtOrds('pending')">&#9203; Pendientes</button>
-          <button class="btn bsm bo" id="of-disp" onclick="filtOrds('dispatched')">&#9989; Despachados</button>
+          <button class="btn bsm bo" id="of-pend" onclick="filtOrds('pending')">⏳ Pendientes</button>
+          <button class="btn bsm bo" id="of-disp" onclick="filtOrds('dispatched')">🚀 Despachados</button>
+          <button class="btn bsm bo" id="of-paid" onclick="filtOrds('paid')">✅ Pagados</button>
+          <button class="btn bsm bo" id="of-dev" onclick="filtOrds('devolucion')">🔄 Devolución</button>
         </div>
         <div id="orders-list"></div>
       </section>
@@ -2409,8 +2434,9 @@ function renderOrds() {
   var html = '';
   for (var i = 0; i < list.length; i++) {
     var o = list[i];
-    var sb = o.status === 'dispatched'
-      ? '<span class="badge bg2">✅ Despachado</span>'
+    var sb = o.status === 'dispatched' ? '<span class="badge bg2">🚀 Despachado</span>'
+      : o.status === 'paid' ? '<span class="badge" style="background:rgba(56,161,105,.25);color:#68d391;border:1px solid rgba(56,161,105,.4)">✅ Pagado</span>'
+      : o.status === 'devolucion' ? '<span class="badge" style="background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3)">🔄 Devolución</span>'
       : '<span class="badge by">⏳ Pendiente</span>';
     var items = '';
     for (var j = 0; j < o.items.length; j++) {
@@ -2418,10 +2444,16 @@ function renderOrds() {
       items += '<div class="oir"><span>' + it.name + ' x' + it.qty + '</span><span>' + (C.cur||'$') + fmt(it.price*it.qty) + '</span></div>';
     }
     var btns = '';
-    if (o.status !== 'dispatched') {
-      btns += '<button class="btn bsm bs" data-oid="' + o.id + '" onclick="dispatchOrd(this.dataset.oid)">🚀 Despachar y enviar WA</button>';
-    } else {
-      btns += '<button class="btn bsm bo" data-oid="' + o.id + '" onclick="sendStatus(this.dataset.oid)">💬 Reenviar WA</button>';
+    if (o.status === 'pending') {
+      btns += '<button class="btn bsm bs" data-oid="' + o.id + '" onclick="dispatchOrd(this.dataset.oid)">🚀 Despachar</button>';
+    }
+    if (o.status === 'dispatched') {
+      btns += '<button class="btn bsm" style="background:rgba(56,161,105,.2);color:#68d391;border:1px solid rgba(56,161,105,.4)" data-oid="' + o.id + '" onclick="markPaid(this.dataset.oid)">✅ Marcar Pagado</button>';
+      btns += '<button class="btn bsm" style="background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3)" data-oid="' + o.id + '" onclick="markDevolucion(this.dataset.oid)">🔄 Devolución</button>';
+      btns += '<button class="btn bsm bo" data-oid="' + o.id + '" onclick="sendStatus(this.dataset.oid)">💬 WA</button>';
+    }
+    if (o.status === 'paid' || o.status === 'devolucion') {
+      btns += '<button class="btn bsm bo" data-oid="' + o.id + '" onclick="sendStatus(this.dataset.oid)">💬 WA</button>';
     }
     btns += '<button class="btn bsm bd" data-oid="' + o.id + '" onclick="delOrd(this.dataset.oid)">🗑</button>';
 
@@ -2448,10 +2480,43 @@ function renderOrds() {
 
 function filtOrds(f) {
   OF = f;
-  document.getElementById('of-all').className  = 'btn bsm ' + (f==='all'?'bp':'bo');
-  document.getElementById('of-pend').className = 'btn bsm ' + (f==='pending'?'bp':'bo');
-  document.getElementById('of-disp').className = 'btn bsm ' + (f==='dispatched'?'bp':'bo');
+  ['all','pend','disp','paid','dev'].forEach(function(x){
+    var map = {all:'all',pend:'pending',disp:'dispatched',paid:'paid',dev:'devolucion'};
+    var el = document.getElementById('of-'+x);
+    if(el) el.className = 'btn bsm ' + (map[x]===f?'bp':'bo');
+  });
   renderOrds();
+}
+
+function markPaid(oid) {
+  var o = null;
+  for(var i=0;i<ORD.length;i++){if(ORD[i].id===oid){o=ORD[i];break;}}
+  if(!o) return;
+  o.status = 'paid';
+  o.paidTs = new Date().toLocaleString('es-CO');
+  // Registrar en CRM
+  if(o.wa){
+    var wk = o.wa.replace(/[^0-9]/g,'');
+    if(wk){
+      if(!CUS[wk]) CUS[wk]={name:o.name,wa:o.wa,orders:[],totalSpent:0};
+      if(CUS[wk].orders.indexOf(o.id)===-1) CUS[wk].orders.push(o.id);
+      CUS[wk].totalSpent = (CUS[wk].totalSpent||0) + o.total;
+      CUS[wk].lastOrder = o.ts;
+      CUS[wk].paid = (CUS[wk].paid||0) + 1;
+    }
+  }
+  saveSt(); renderOrds(); renderCRM();
+  toast('✅ Pedido marcado como pagado','s');
+}
+
+function markDevolucion(oid) {
+  var o = null;
+  for(var i=0;i<ORD.length;i++){if(ORD[i].id===oid){o=ORD[i];break;}}
+  if(!o) return;
+  o.status = 'devolucion';
+  o.devTs = new Date().toLocaleString('es-CO');
+  saveSt(); renderOrds(); renderCRM();
+  toast('🔄 Pedido marcado como devolución','s');
 }
 
 function openDisp(oid) {
