@@ -419,7 +419,20 @@ function hideMask(){
     <div id="asesor-session-name" style="font-weight:700;font-size:14px;color:var(--cp)"></div>
   </div>
   <div id="asesor-session-mesas" style="font-size:12px;color:var(--cmut)"></div>
+  <button class="btn bsm bo" style="border-radius:8px;font-size:12px;position:relative" onclick="togglePanelPedidos()">
+    📋 Mis Pedidos
+    <span id="asesor-pedidos-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#e53e3e;color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center">0</span>
+  </button>
   <button class="btn bsm bo" style="border-radius:8px;font-size:12px" onclick="cerrarSesionAsesor()">🚪 Salir</button>
+</div>
+
+<!-- PANEL PEDIDOS DEL ASESOR -->
+<div id="asesor-pedidos-panel" style="display:none;background:#0d0d1a;border-bottom:2px solid rgba(240,165,0,.2);padding:14px 16px;max-height:70vh;overflow-y:auto">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:var(--cp)">📋 Pedidos de mis mesas</div>
+    <button onclick="togglePanelPedidos()" style="background:none;border:none;color:var(--cmut);font-size:18px;cursor:pointer;padding:0">✕</button>
+  </div>
+  <div id="asesor-pedidos-lista"></div>
 </div>
 
 <section id="catalog">
@@ -1522,6 +1535,7 @@ function initFirebase() {
     if (data.ASESORES) ASESORES = data.ASESORES;
     try { localStorage.setItem(SK, JSON.stringify({C:C,P:P,CATS:CATS,ORD:ORD,CUS:CUS,ASESORES:ASESORES,_ts:data._ts||Date.now()})); } catch(e) {}
     applyC(); renderCat(); renderTicker();
+    if (ASESOR_SESSION) { renderPedidosAsesor(); }
     if (!_loaded) {
       _loaded = true;
       renderProdList(); renderCatList(); renderOrds(); renderCRM();
@@ -3350,11 +3364,16 @@ function loginAsesorSession() {
   var mesasStr = (a.mesas&&a.mesas.length) ? 'Mesas: '+a.mesas.join(', ') : '';
   document.getElementById('asesor-session-mesas').textContent = mesasStr;
   toast('👋 Bienvenido ' + a.nombre + ' — ya puedes tomar pedidos', 's');
+  renderPedidosAsesor();
 }
 
 function cerrarSesionAsesor() {
   ASESOR_SESSION = null;
   document.getElementById('asesor-session-bar').style.display = 'none';
+  var panel = document.getElementById('asesor-pedidos-panel');
+  if (panel) panel.style.display = 'none';
+  var badge = document.getElementById('asesor-pedidos-badge');
+  if (badge) badge.style.display = 'none';
   iniciarModoAsesor();
 }
 
@@ -3560,6 +3579,104 @@ function cambiarPinCRM() {
   document.getElementById('crm-pin-cur').value = '';
   document.getElementById('crm-pin-new').value = '';
   toast('✅ PIN del CRM actualizado','s');
+}
+
+// ============================================================
+// PANEL PEDIDOS EN TIEMPO REAL — ASESOR
+// ============================================================
+function renderPedidosAsesor() {
+  if (!ASESOR_SESSION) return;
+  var mesas = ASESOR_SESSION.mesas || [];
+  var ahora = Date.now();
+
+  // Filtrar pedidos pendientes o despachados de sus mesas
+  var misPedidos = ORD.filter(function(o) {
+    if (o.status !== 'pending' && o.status !== 'dispatched') return false;
+    if (mesas.length && mesas.indexOf(parseInt(o.mesa)) === -1) return false;
+    return true;
+  });
+
+  // Actualizar badge
+  var badge = document.getElementById('asesor-pedidos-badge');
+  var pendientes = misPedidos.filter(function(o){ return o.status === 'pending'; }).length;
+  if (badge) {
+    if (pendientes > 0) {
+      badge.textContent = pendientes;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  var lista = document.getElementById('asesor-pedidos-lista');
+  if (!lista) return;
+
+  if (!misPedidos.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:24px;color:var(--cmut);font-size:13px">Sin pedidos activos en tus mesas</div>';
+    return;
+  }
+
+  // Ordenar: pendientes primero, luego por tiempo
+  misPedidos.sort(function(a, b) {
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    return (a.ts > b.ts) ? 1 : -1;
+  });
+
+  var html = '';
+  for (var i = 0; i < misPedidos.length; i++) {
+    var o = misPedidos[i];
+    var esPendiente = o.status === 'pending';
+    var minutos = o._ts ? Math.floor((ahora - o._ts) / 60000) : '—';
+    var urgente = typeof minutos === 'number' && minutos >= 15;
+    var colorBorde = urgente ? 'rgba(229,62,62,.5)' : esPendiente ? 'rgba(240,165,0,.3)' : 'rgba(56,161,105,.3)';
+    var colorFondo = urgente ? 'rgba(229,62,62,.07)' : esPendiente ? 'rgba(240,165,0,.06)' : 'rgba(56,161,105,.06)';
+    var tiempoBadge = typeof minutos === 'number'
+      ? '<span style="background:' + (urgente?'rgba(229,62,62,.2)':'rgba(240,165,0,.15)') + ';color:' + (urgente?'#fc8181':'#f0a500') + ';border:1px solid ' + (urgente?'rgba(229,62,62,.4)':'rgba(240,165,0,.3)') + ';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">' + minutos + ' min</span>'
+      : '';
+    var estadoBadge = esPendiente
+      ? '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Pendiente</span>'
+      : '<span style="background:rgba(56,161,105,.15);color:#68d391;border:1px solid rgba(56,161,105,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🚀 Despachado</span>';
+    var items = '';
+    for (var j = 0; j < o.items.length; j++) {
+      items += '<div style="font-size:12px;color:var(--cmut);display:flex;justify-content:space-between;padding:1px 0">' +
+        '<span>' + o.items[j].name + ' x' + o.items[j].qty + '</span>' +
+        '<span>' + (C.cur||'$') + fmt(o.items[j].price * o.items[j].qty) + '</span></div>';
+    }
+    var botonDespachar = esPendiente
+      ? '<button onclick="asesorDespacharPedido(\'' + o.id + '\')" style="background:#276749;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;width:100%">✅ Marcar listo</button>'
+      : '';
+    html += '<div style="background:' + colorFondo + ';border:1px solid ' + colorBorde + ';border-radius:12px;padding:12px;margin-bottom:10px">' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">' +
+        '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">Mesa ' + o.mesa + '</span>' +
+        estadoBadge + tiempoBadge +
+      '</div>' +
+      items +
+      '<div style="font-size:11px;color:var(--cmut);margin-top:6px">👤 ' + o.name + ' · ' + o.pay + ' · ' + (C.cur||'$') + fmt(o.total) + '</div>' +
+      botonDespachar +
+    '</div>';
+  }
+  lista.innerHTML = html;
+}
+
+function togglePanelPedidos() {
+  var panel = document.getElementById('asesor-pedidos-panel');
+  if (!panel) return;
+  var visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible) renderPedidosAsesor();
+}
+
+function asesorDespacharPedido(oid) {
+  var o = null;
+  for (var i = 0; i < ORD.length; i++) { if (ORD[i].id === oid) { o = ORD[i]; break; } }
+  if (!o) return;
+  o.status = 'dispatched';
+  o.dispTs = new Date().toLocaleString('es-CO');
+  o.asesorDespacho = ASESOR_SESSION ? ASESOR_SESSION.nombre : '—';
+  saveSt();
+  renderPedidosAsesor();
+  toast('✅ Pedido Mesa ' + o.mesa + ' marcado como listo', 's');
 }
 
 function renderPts() {
