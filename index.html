@@ -1180,6 +1180,7 @@ function hideMask(){
                   <option value="ambos">🔄 Mesas y Domicilios</option>
                   <option value="mesa">🪑 Solo Mesas</option>
                   <option value="domicilio">🛵 Solo Domicilios</option>
+                  <option value="cocina">🍳 Cocina</option>
                 </select>
               </div>
               <div id="asesor-mesas-wrap" class="fg" style="display:none">
@@ -1543,7 +1544,9 @@ function initFirebase() {
     if (data.ASESORES) ASESORES = data.ASESORES;
     try { localStorage.setItem(SK, JSON.stringify({C:C,P:P,CATS:CATS,ORD:ORD,CUS:CUS,ASESORES:ASESORES,_ts:data._ts||Date.now()})); } catch(e) {}
     applyC(); renderCat(); renderTicker();
-    if (ASESOR_SESSION) { renderPedidosAsesor(); }
+    if (ASESOR_SESSION) {
+      if (ASESOR_SESSION.tipo === 'cocina') { renderPanelCocina(); } else { renderPedidosAsesor(); }
+    }
     if (!_loaded) {
       _loaded = true;
       renderProdList(); renderCatList(); renderOrds(); renderCRM();
@@ -2716,7 +2719,7 @@ function delCat(idx) {
 // ============================================================
 function renderOrds() {
   var el = document.getElementById('orders-list');
-  var list = OF === 'all' ? ORD.filter(function(o){ return o.status==='pending'||o.status==='dispatched'; }) : ORD.filter(function(o){ return o.status === OF; });
+  var list = OF === 'all' ? ORD.filter(function(o){ return o.status==='pending'||o.status==='dispatched'||o.status==='ready'; }) : ORD.filter(function(o){ return o.status === OF; });
   if (!list.length) {
     el.innerHTML = '<div class="empty"><span class="ei">🧾</span><h3>Sin pedidos</h3><p>Los pedidos aparecerán cuando los clientes compren</p></div>';
     return;
@@ -2727,6 +2730,7 @@ function renderOrds() {
     var sb = o.status === 'dispatched' ? '<span class="badge bg2">🚀 Despachado</span>'
       : o.status === 'paid' ? '<span class="badge" style="background:rgba(56,161,105,.25);color:#68d391;border:1px solid rgba(56,161,105,.4)">✅ Pagado</span>'
       : o.status === 'devolucion' ? '<span class="badge" style="background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3)">🔄 Devolución</span>'
+      : o.status === 'ready' ? '<span class="badge" style="background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.4)">🍳 Listo — a entregar</span>'
       : '<span class="badge by">⏳ Pendiente</span>';
     var items = '';
     for (var j = 0; j < o.items.length; j++) {
@@ -2734,7 +2738,7 @@ function renderOrds() {
       items += '<div class="oir"><span>' + it.name + ' x' + it.qty + '</span><span>' + (C.cur||'$') + fmt(it.price*it.qty) + '</span></div>';
     }
     var btns = '';
-    if (o.status === 'pending') {
+    if (o.status === 'pending' || o.status === 'ready') {
       btns += '<button class="btn bsm bs" data-oid="' + o.id + '" onclick="dispatchOrd(this.dataset.oid)">🚀 Despachar</button>';
     }
     if (o.status === 'dispatched') {
@@ -2754,6 +2758,7 @@ function renderOrds() {
           '<div class="ocid">' + o.id + ' · ' + o.pay + '</div>' +
           '<div class="ocwa">📱 ' + (o.wa||'Mesa '+o.mesa) + '</div>' +
           (o.tomadoby ? '<div style="font-size:12px;color:var(--cp)">📝 Tomado por: '+o.tomadoby+'</div>' : (o.asesorAsignado ? '<div style="font-size:12px;color:var(--cp)">👤 Asesor: '+o.asesorAsignado+'</div>' : '')) +
+          (o.preparadoPor ? '<div style="font-size:12px;color:#fb923c">🍳 Preparado por: '+o.preparadoPor+'</div>' : '') +
           (o.asesorDespacho && o.asesorDespacho!=='—' ? '<div style="font-size:12px;color:var(--cmut)">🚀 Despachó: '+o.asesorDespacho+'</div>' : '') +
           (o.asesorCobro && o.asesorCobro!=='—' ? '<div style="font-size:12px;color:#68d391">✅ Cobró: '+o.asesorCobro+'</div>' : '') +
         '</div>' +
@@ -3372,7 +3377,7 @@ function loginAsesorSession() {
   var mesasStr = (a.mesas&&a.mesas.length) ? 'Mesas: '+a.mesas.join(', ') : '';
   document.getElementById('asesor-session-mesas').textContent = mesasStr;
   toast('👋 Bienvenido ' + a.nombre + ' — ya puedes tomar pedidos', 's');
-  renderPedidosAsesor();
+  if (a.tipo === 'cocina') { renderPanelCocina(); } else { renderPedidosAsesor(); }
 }
 
 function cerrarSesionAsesor() {
@@ -3635,7 +3640,7 @@ function renderPedidosAsesor() {
   var mesas = ASESOR_SESSION.mesas || [];
   var ahora = Date.now();
   var misPedidos = ORD.filter(function(o) {
-    if (o.status !== 'pending' && o.status !== 'dispatched') return false;
+    if (o.status !== 'pending' && o.status !== 'dispatched' && o.status !== 'ready') return false;
     if (mesas.length && mesas.indexOf(parseInt(o.mesa)) === -1) return false;
     return true;
   });
@@ -3651,16 +3656,20 @@ function renderPedidosAsesor() {
     var o = misPedidos[i];
     var esPendiente = o.status === 'pending';
     var minutos = o._ts ? Math.floor((ahora - o._ts) / 60000) : null;
+    var esReady = o.status === 'ready';
     var urgente = minutos !== null && minutos >= 15;
-    var colorBorde = urgente ? 'rgba(229,62,62,.5)' : esPendiente ? 'rgba(240,165,0,.3)' : 'rgba(56,161,105,.3)';
-    var colorFondo = urgente ? 'rgba(229,62,62,.07)' : esPendiente ? 'rgba(240,165,0,.06)' : 'rgba(56,161,105,.06)';
+    var colorBorde = esReady ? 'rgba(251,146,60,.5)' : urgente ? 'rgba(229,62,62,.5)' : esPendiente ? 'rgba(240,165,0,.3)' : 'rgba(56,161,105,.3)';
+    var colorFondo = esReady ? 'rgba(251,146,60,.08)' : urgente ? 'rgba(229,62,62,.07)' : esPendiente ? 'rgba(240,165,0,.06)' : 'rgba(56,161,105,.06)';
     var tiempoBadge = minutos !== null ? '<span style="background:'+(urgente?'rgba(229,62,62,.2)':'rgba(240,165,0,.15)')+';color:'+(urgente?'#fc8181':'#f0a500')+';border:1px solid '+(urgente?'rgba(229,62,62,.4)':'rgba(240,165,0,.3)')+';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">'+minutos+' min</span>' : '';
-    var estadoBadge = esPendiente ? '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Pendiente</span>' : '<span style="background:rgba(56,161,105,.15);color:#68d391;border:1px solid rgba(56,161,105,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🚀 Despachado</span>';
+    var estadoBadge = esReady
+      ? '<span style="background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.4);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🍳 Listo — a entregar</span>'
+      : esPendiente ? '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Pendiente</span>'
+      : '<span style="background:rgba(56,161,105,.15);color:#68d391;border:1px solid rgba(56,161,105,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🚀 Despachado</span>';
+    var botonListo = (esPendiente || esReady) ? '<button onclick="asesorDespacharPedido(\''+o.id+'\')" style="background:#276749;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;width:100%">✅ Marcar listo</button>' : '';
     var items = '';
     for (var j = 0; j < o.items.length; j++) {
       items += '<div style="font-size:12px;color:var(--cmut);display:flex;justify-content:space-between;padding:1px 0"><span>'+o.items[j].name+' x'+o.items[j].qty+'</span><span>'+(C.cur||'$')+fmt(o.items[j].price*o.items[j].qty)+'</span></div>';
     }
-    var botonListo = esPendiente ? '<button onclick="asesorDespacharPedido(\''+o.id+'\')" style="background:#276749;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;width:100%">✅ Marcar listo</button>' : '';
     html += '<div style="background:'+colorFondo+';border:1px solid '+colorBorde+';border-radius:12px;padding:12px;margin-bottom:10px">'+
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+
         '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">Mesa '+o.mesa+'</span>'+
@@ -3690,6 +3699,62 @@ function asesorDespacharPedido(oid) {
   saveSt();
   renderPedidosAsesor();
   toast('✅ Mesa ' + o.mesa + ' marcada como lista', 's');
+}
+
+// ============================================================
+// PANEL COCINA
+// ============================================================
+function renderPanelCocina() {
+  if (!ASESOR_SESSION || ASESOR_SESSION.tipo !== 'cocina') return;
+  var lista = document.getElementById('asesor-pedidos-lista');
+  if (!lista) return;
+  var ahora = Date.now();
+  var pedidos = ORD.filter(function(o){ return o.status === 'pending' || o.status === 'ready'; });
+  pedidos.sort(function(a,b){ return (a._ts||0) - (b._ts||0); });
+  var badge = document.getElementById('asesor-pedidos-badge');
+  var pendientes = pedidos.filter(function(o){ return o.status==='pending'; }).length;
+  if (badge) { if (pendientes>0){ badge.textContent=pendientes; badge.style.display='flex'; } else { badge.style.display='none'; } }
+  if (!pedidos.length) { lista.innerHTML='<div style="text-align:center;padding:24px;color:var(--cmut);font-size:13px">Sin pedidos pendientes en este momento</div>'; return; }
+  var html = '';
+  for (var i=0; i<pedidos.length; i++) {
+    var o = pedidos[i];
+    var esReady = o.status === 'ready';
+    var minutos = o._ts ? Math.floor((ahora-o._ts)/60000) : null;
+    var urgente = minutos !== null && minutos >= 15;
+    var colorBorde = esReady ? 'rgba(251,146,60,.5)' : urgente ? 'rgba(229,62,62,.5)' : 'rgba(240,165,0,.3)';
+    var colorFondo = esReady ? 'rgba(251,146,60,.08)' : urgente ? 'rgba(229,62,62,.07)' : 'rgba(240,165,0,.06)';
+    var tipoLabel = o.modo==='mesa'
+      ? '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🪑 Mesa '+o.mesa+'</span>'
+      : '<span style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🛵 Domicilio</span>';
+    var tiempoBadge = minutos!==null ? '<span style="background:'+(urgente?'rgba(229,62,62,.2)':'rgba(240,165,0,.15)')+';color:'+(urgente?'#fc8181':'#f0a500')+';border:1px solid '+(urgente?'rgba(229,62,62,.4)':'rgba(240,165,0,.3)')+';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">'+minutos+' min</span>' : '';
+    var estadoBadge = esReady
+      ? '<span style="background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.4);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🍳 Preparado</span>'
+      : '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Por preparar</span>';
+    var items = '';
+    for (var j=0; j<o.items.length; j++) {
+      items += '<div style="font-size:13px;font-weight:600;color:var(--ctxt);display:flex;justify-content:space-between;padding:2px 0"><span>'+o.items[j].name+' <strong>x'+o.items[j].qty+'</strong></span></div>';
+    }
+    var boton = !esReady
+      ? '<button onclick="cocinaPrepararPedido(\''+o.id+'\')" style="background:#f0a500;color:#000;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;width:100%">🍳 Marcar como preparado</button>'
+      : '<div style="text-align:center;font-size:12px;color:#fb923c;margin-top:8px;font-weight:600">✅ Ya marcado como listo</div>';
+    html += '<div style="background:'+colorFondo+';border:1px solid '+colorBorde+';border-radius:12px;padding:14px;margin-bottom:12px">'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">'+tipoLabel+estadoBadge+tiempoBadge+'</div>'+
+      '<div style="font-size:12px;color:var(--cmut);margin-bottom:8px">👤 '+o.name+(o.notes?' · 📝 '+o.notes:'')+'</div>'+
+      items+boton+'</div>';
+  }
+  lista.innerHTML = html;
+}
+
+function cocinaPrepararPedido(oid) {
+  var o = null;
+  for (var i=0; i<ORD.length; i++) { if (ORD[i].id===oid){ o=ORD[i]; break; } }
+  if (!o) return;
+  o.status = 'ready';
+  o.readyTs = new Date().toLocaleString('es-CO');
+  o.preparadoPor = ASESOR_SESSION ? ASESOR_SESSION.nombre : 'Cocina';
+  saveSt();
+  renderPanelCocina();
+  toast('🍳 Pedido '+(o.modo==='mesa'?'Mesa '+o.mesa:'domicilio')+' listo para entregar','s');
 }
 
 function renderPts() {
