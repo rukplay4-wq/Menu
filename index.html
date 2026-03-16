@@ -1179,7 +1179,6 @@ function hideMask(){
             <span style="font-size:11px;color:var(--cmut)">Escribe un rango (1-5) o mesas separadas por coma (1,3,5)</span>
           </div>
           <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="fi" id="asesor-pin" type="password" placeholder="••••" maxlength="4" style="max-width:120px"></div>
-          <div class="fg"><label class="fl">WhatsApp del asesor (para notificarle pedidos de sus mesas)</label><input class="fi" id="asesor-wa" type="tel" placeholder="+57 300 000 0000"></div>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px">
             <input type="checkbox" id="asesor-activo-chk" checked style="width:16px;height:16px;accent-color:var(--cp)">
             Asesor activo (disponible para recibir pedidos)
@@ -2144,38 +2143,21 @@ function placeOrd() {
   var esMesa = o.modo === 'mesa';
   var esAsesorMode = !!ASESOR_SESSION;
 
-  // Si es pedido de mesa (cliente escaneó QR), buscar el asesor asignado y notificarle por WA
-  if (esMesa && !esAsesorMode && o.mesa) {
-    var asesorDeMesa = null;
-    for (var ai = 0; ai < ASESORES.length; ai++) {
-      var av = ASESORES[ai];
-      if (av.activo !== false && (av.tipo === 'mesa' || av.tipo === 'ambos') && av.mesas && av.mesas.indexOf(parseInt(o.mesa)) !== -1) {
-        asesorDeMesa = av; break;
-      }
-    }
-    if (asesorDeMesa && asesorDeMesa.wa) {
-      var msgAsesor = '🔔 *NUEVO PEDIDO — Mesa ' + o.mesa + '*\n' +
-        '👤 Cliente: ' + o.name + '\n' +
-        '💳 Pago: ' + o.pay + '\n\n' +
-        '🛒 *Productos:*\n';
-      for (var pi2 = 0; pi2 < o.items.length; pi2++) {
-        msgAsesor += '  • ' + o.items[pi2].name + ' x' + o.items[pi2].qty + '\n';
-      }
-      msgAsesor += '\n💰 *Total: ' + (C.cur||'$') + fmt(o.total) + '*';
-      window.open('https://wa.me/' + asesorDeMesa.wa.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msgAsesor), '_blank');
-    } else if (waNum) {
-      // Sin asesor con WA configurado — notificar al negocio
+  if (esAsesorMode) {
+    // Asesor tomando pedido: solo va a caja, sin WhatsApp
+  } else if (esMesa) {
+    // Cliente escaneó QR de mesa: solo notifica al negocio si mesawa está activo
+    if (C.mesawa && waNum) {
       var msg = buildWAmsg(o);
       window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
     }
-  } else if (!esAsesorMode && !esMesa) {
-    // Domicilio — notificar al negocio
+  } else {
+    // Domicilio: notificar al negocio
     if (waNum) {
       var msg = buildWAmsg(o);
       window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
     }
   }
-  // Asesor tomando pedido: solo va a caja, sin abrir WhatsApp
 
   closeM('m-chk');
   document.getElementById('m-ok').classList.remove('hidden');
@@ -2777,7 +2759,7 @@ function markPaid(oid) {
   o.status = 'paid';
   o.paidTs = new Date().toLocaleString('es-CO');
   o.asesorCobro = ASESOR_ACTIVO ? ASESOR_ACTIVO.nombre : '—';
-  // Registrar en CRM
+  // Registrar en CRM — sin enviar WhatsApp
   if(o.wa){
     var wk = o.wa.replace(/[^0-9]/g,'');
     if(wk){
@@ -2789,7 +2771,7 @@ function markPaid(oid) {
     }
   }
   saveSt(); renderOrds(); renderCRM();
-  toast('✅ Pedido marcado como pagado','s');
+  toast('✅ Pagado — registrado en CRM','s');
 }
 
 function markDevolucion(oid) {
@@ -2812,11 +2794,13 @@ function openDisp(oid) {
   html += '<p style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🧾 Detalle del pedido</p>';
   html += buildTkt(o);
   html += '</div>';
-  html += '<div style="background:rgba(47,133,90,.1);border:1px solid rgba(47,133,90,.25);border-radius:10px;padding:12px;margin-bottom:4px">';
-  html += '<p style="font-size:12px;font-weight:700;color:#68d391;margin-bottom:8px">📱 Mensaje que recibirá el cliente en WhatsApp</p>';
-  html += '<pre style="font-size:11px;color:#a8e6a3;white-space:pre-wrap;line-height:1.6;font-family:monospace;margin:0">' + escH(buildDispatchMsg(o)) + '</pre>';
-  html += '<p style="font-size:11px;color:#68d391;margin-top:8px">→ Se enviará a: <strong>' + o.wa + '</strong></p>';
-  html += '</div>';
+  if (o.modo !== 'mesa') {
+    html += '<div style="background:rgba(47,133,90,.1);border:1px solid rgba(47,133,90,.25);border-radius:10px;padding:12px;margin-bottom:4px">';
+    html += '<p style="font-size:12px;font-weight:700;color:#68d391;margin-bottom:8px">📱 Mensaje que recibirá el cliente en WhatsApp</p>';
+    html += '<pre style="font-size:11px;color:#a8e6a3;white-space:pre-wrap;line-height:1.6;font-family:monospace;margin:0">' + escH(buildDispatchMsg(o)) + '</pre>';
+    html += '<p style="font-size:11px;color:#68d391;margin-top:8px">→ Se enviará a: <strong>' + o.wa + '</strong></p>';
+    html += '</div>';
+  }
 
   document.getElementById('disp-body').innerHTML = html;
   document.getElementById('disp-ok').setAttribute('data-oid', oid);
@@ -2853,15 +2837,19 @@ function dispatchOrd(oid) {
   saveSt();
 
   var esMesa = o.modo === 'mesa';
-  // Mesa: enviar al WhatsApp del negocio. Domicilio: enviar al WhatsApp del cliente
-  var waTarget = esMesa ? (C.wa||'').replace(/[^0-9]/g,'') : o.wa.replace(/[^0-9]/g,'');
-  if (!waTarget) { toast('⚠️ No hay número de WhatsApp configurado','e'); renderOrds(); renderCRM(); return; }
-  var msg = buildDispatchMsg(o);
-  window.open('https://wa.me/' + waTarget + '?text=' + encodeURIComponent(msg), '_blank');
+  if (!esMesa) {
+    // Domicilio: enviar WhatsApp al cliente con el mensaje "va en camino"
+    var waCliente = (o.wa||'').replace(/[^0-9]/g,'');
+    if (waCliente) {
+      var msg = buildDispatchMsg(o);
+      window.open('https://wa.me/' + waCliente + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+  }
+  // Mesa: solo va a caja, sin WhatsApp
 
   renderOrds();
   renderCRM();
-  toast('✅ Despachado — WhatsApp abierto con el ticket completo','s');
+  toast('✅ Despachado' + (!esMesa ? ' — WhatsApp abierto' : ''), 's');
 }
 
 function sendStatus(oid) {
@@ -3259,7 +3247,7 @@ function guardarAsesor() {
     }
   }
   var activo = (document.getElementById('asesor-activo-chk') ? document.getElementById('asesor-activo-chk').checked : true);
-  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr, activo: activo, wa: (document.getElementById('asesor-wa')?document.getElementById('asesor-wa').value.trim():'') };
+  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr, activo: activo };
   if (editIdx !== '') {
     ASESORES[parseInt(editIdx)] = asesor;
     toast('✅ Asesor actualizado','s');
@@ -3272,7 +3260,6 @@ function guardarAsesor() {
   document.getElementById('asesor-pin').value = '';
   document.getElementById('asesor-img').value = '';
   document.getElementById('asesor-edit-idx').value = '';
-  var waInp = document.getElementById('asesor-wa'); if(waInp) waInp.value = '';
   _asesorImg = null;
   var prev = document.getElementById('prev-asesor');
   if (prev) { prev.src = ''; prev.style.display = 'none'; }
@@ -3420,8 +3407,6 @@ function editarAsesor(idx) {
   if (tipoSel) { tipoSel.value = a.tipo||'ambos'; toggleAsesorTipo(); }
   var mesasInp = document.getElementById('asesor-mesas');
   if (mesasInp && a.mesas) mesasInp.value = a.mesas.join(',');
-  var waInp2 = document.getElementById('asesor-wa');
-  if (waInp2) waInp2.value = a.wa || '';
   toast('✏️ Editando asesor — ingresa nuevo PIN para cambiarlo','s');
 }
 
