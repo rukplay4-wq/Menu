@@ -1553,8 +1553,9 @@ function initFirebase() {
       var ind = document.getElementById('sync-ind');
       if (ind) ind.style.display = '';
       if (typeof hideMask === 'function') hideMask();
-      if (ASESOR_DIRECTO !== null) { mostrarLoginAsesorDirecto(); }
-      else if (MODO_ASESOR) { iniciarModoAsesor(); }
+      // Disparar login asesor ahora que tenemos los datos de Firebase
+      if (ASESOR_DIRECTO !== null && !ASESOR_SESSION) { mostrarLoginAsesorDirecto(); }
+      else if (MODO_ASESOR && !ASESOR_SESSION) { iniciarModoAsesor(); }
     }
     if (document.getElementById('adm') && document.getElementById('adm').classList.contains('show')) {
       fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM(); renderAsesoresList(); actualizarBarraAsesor();
@@ -1608,6 +1609,13 @@ window.addEventListener('DOMContentLoaded', function() {
   if (MODO_ASESOR || ASESOR_DIRECTO !== null) {
     var admBtn = document.getElementById('admbtn');
     if (admBtn) admBtn.style.display = 'none';
+    // Si ya tenemos asesores en localStorage, mostrar login de inmediato
+    if (ASESOR_DIRECTO !== null && ASESORES.length) {
+      mostrarLoginAsesorDirecto();
+    } else if (MODO_ASESOR && ASESORES.length) {
+      iniciarModoAsesor();
+    }
+    // Si no hay asesores aún (primera vez), Firebase los cargará y disparará el login
   }
   // Mostrar banner de mesa si viene de NFC/QR
   if (MESA_NUM) {
