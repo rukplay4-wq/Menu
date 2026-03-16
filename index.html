@@ -392,6 +392,36 @@ function hideMask(){
   🪑 Estás en la <span id="mesa-banner-num"></span> — Haz tu pedido y lo atendemos
 </div>
 
+<!-- PANTALLA LOGIN ASESOR -->
+<div id="asesor-login-screen" style="display:none;position:fixed;inset:0;z-index:9998;background:var(--cbg);flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
+  <div style="font-size:56px;margin-bottom:16px">👨‍🍳</div>
+  <div id="asesor-login-title" style="font-family:var(--fhead);font-size:24px;font-weight:700;margin-bottom:6px">Acceso Asesor</div>
+  <div style="font-size:14px;color:var(--cmut);margin-bottom:28px">Ingresa tu PIN para tomar pedidos</div>
+  <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px">
+    <div id="asesor-login-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+    <div id="asesor-pin-login-wrap" style="display:none;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;margin-bottom:4px">
+        <div id="asesor-login-sel-img" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0"></div>
+        <div id="asesor-login-sel-name" style="font-weight:700;font-size:16px"></div>
+      </div>
+      <input class="fi" id="asesor-login-pin" type="password" placeholder="••••" maxlength="4" style="text-align:center;font-size:28px;letter-spacing:10px" onkeydown="if(event.key==='Enter')loginAsesorSession()">
+      <button class="btn bp w100" style="border-radius:12px;padding:14px" onclick="loginAsesorSession()">✅ Entrar al Menú</button>
+      <button class="btn bo w100" style="border-radius:12px" onclick="volverListaAsesores()">← Volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- BARRA ASESOR ACTIVO EN MODO ASESOR -->
+<div id="asesor-session-bar" style="display:none;background:linear-gradient(90deg,#1a0a2e,#0a1a1a);border-bottom:2px solid var(--cp);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <div id="asesor-session-img" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0"></div>
+  <div style="flex:1">
+    <div style="font-size:11px;color:var(--cmut)">Tomando pedidos como:</div>
+    <div id="asesor-session-name" style="font-weight:700;font-size:14px;color:var(--cp)"></div>
+  </div>
+  <div id="asesor-session-mesas" style="font-size:12px;color:var(--cmut)"></div>
+  <button class="btn bsm bo" style="border-radius:8px;font-size:12px" onclick="cerrarSesionAsesor()">🚪 Salir</button>
+</div>
+
 <section id="catalog">
   <div class="sec-hdr">
     <div class="sec-lbl">Cat&#225;logo</div>
@@ -433,6 +463,13 @@ function hideMask(){
       <div id="cs1">
         <!-- Indicador de modo -->
         <div id="modo-badge" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-weight:700;font-size:13px"></div>
+        <!-- Selector mesa para modo asesor -->
+        <div id="asesor-mesa-sel-wrap" style="display:none;margin-bottom:14px">
+          <label class="fl">🪑 Selecciona la mesa</label>
+          <select class="fi" id="asesor-mesa-sel">
+            <option value="">Selecciona una mesa...</option>
+          </select>
+        </div>
         <div class="frow">
           <div class="fg"><label class="fl">Nombre *</label><input class="fi" id="cn-nm" placeholder="Pedro Pérez"></div>
           <div class="fg" id="wrap-wa"><label class="fl">WhatsApp *</label><input class="fi" id="cn-wa" placeholder="+57 300 000 0000" type="tel"></div>
@@ -1038,17 +1075,10 @@ function hideMask(){
       <section class="asec" id="sec-orders">
         <div class="asttl">Caja de Pedidos</div>
         <div class="assub">Al despachar, se abre WhatsApp automáticamente con el mensaje completo al cliente.</div>
-        <!-- Asesor activo -->
-        <div id="asesor-activo-bar" style="display:none;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div id="asesor-activo-info" style="display:flex;align-items:center;gap:8px;flex:1">
-            <div id="asesor-activo-img" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0"></div>
-            <div><div style="font-size:11px;color:var(--cmut)">Atendiendo:</div><div id="asesor-activo-nombre" style="font-weight:700;font-size:14px;color:var(--cp)"></div></div>
-          </div>
-          <button class="btn bsm bo" style="border-radius:8px;font-size:12px" onclick="cambiarAsesor()">🔄 Cambiar</button>
-        </div>
-        <div id="asesor-activo-bar-none" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:13px;color:var(--cmut)">👤 Ningún asesor activo</span>
-          <button class="btn bsm bp" style="border-radius:8px" onclick="seleccionarAsesor()">Seleccionar Asesor</button>
+        <!-- Asesores activos en caja -->
+        <div id="asesores-caja-bar" style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">👥 Asesores en turno</div>
+          <div id="asesores-caja-chips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
           <button class="btn bsm bp" id="of-all" onclick="filtOrds('all')">Todos</button>
@@ -1149,6 +1179,10 @@ function hideMask(){
             <span style="font-size:11px;color:var(--cmut)">Escribe un rango (1-5) o mesas separadas por coma (1,3,5)</span>
           </div>
           <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="fi" id="asesor-pin" type="password" placeholder="••••" maxlength="4" style="max-width:120px"></div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px">
+            <input type="checkbox" id="asesor-activo-chk" checked style="width:16px;height:16px;accent-color:var(--cp)">
+            Asesor activo (disponible para recibir pedidos)
+          </label>
           <button class="btn bp" style="border-radius:10px" onclick="guardarAsesor()">💾 Guardar Asesor</button>
           <input type="hidden" id="asesor-edit-idx" value="">
         </div>
@@ -1170,6 +1204,14 @@ function hideMask(){
           </div>
           <div style="font-size:11px;color:var(--cmut);margin-bottom:16px">
             💡 Copia el link de cada mesa y pégalo en tu etiqueta NFC o generador de QR
+          </div>
+          <div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:10px;padding:12px;margin-bottom:16px">
+            <div style="font-size:11px;font-weight:800;color:var(--cp);text-transform:uppercase;margin-bottom:6px">👨‍🍳 LINK PARA ASESORES</div>
+            <div style="font-size:12px;color:var(--cmut);margin-bottom:8px">Comparte este link con tus meseros para que tomen pedidos desde su celular</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div id="asesor-link-txt" style="font-size:12px;color:var(--ctxt);word-break:break-all;flex:1;background:rgba(255,255,255,.05);padding:8px;border-radius:8px"></div>
+              <button class="btn bsm bp" style="border-radius:8px;white-space:nowrap" onclick="copiarLinkAsesor(this)">📋 Copiar</button>
+            </div>
           </div>
           <div id="mesas-list" style="display:flex;flex-direction:column;gap:10px"></div>
         </div>
@@ -1503,7 +1545,9 @@ var ORD  = st && st.ORD  ? st.ORD  : [];
 var CUS  = st && st.CUS  ? st.CUS  : {};
 // Detectar mesa desde URL
 var MESA_NUM = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('mesa')||''; } catch(e){ return ''; } })();
+var MODO_ASESOR = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('modo')==='asesor'; } catch(e){ return false; } })();
 var MODO = MESA_NUM ? 'mesa' : 'domicilio';
+var ASESOR_SESSION = null; // asesor logueado en modo asesor
 var ASESORES = [];
 var ASESOR_ACTIVO = null; // {idx, nombre, img}
 var CRM_AUTH = false;
@@ -1513,6 +1557,14 @@ var OF   = 'all';
 var ACAT = 'Todos';
 
 window.addEventListener('DOMContentLoaded', function() {
+  // Modo asesor — mostrar pantalla de login
+  if (MODO_ASESOR) {
+    // Ocultar botón admin
+    var admBtn = document.getElementById('admbtn');
+    if (admBtn) admBtn.style.display = 'none';
+    // Esperar que Firebase cargue para mostrar login
+    setTimeout(function(){ iniciarModoAsesor(); }, 800);
+  }
   // Mostrar banner de mesa si viene de NFC/QR
   if (MESA_NUM) {
     var mb = document.getElementById('mesa-banner');
@@ -1821,24 +1873,53 @@ function renderCartB() {
 function openChk() {
   if (!CART.length) return;
   CS = 1; closeM('m-cart'); updCS();
-  // Configurar modo mesa vs domicilio
   var esMesa = MODO === 'mesa';
+  var esAsesor = !!ASESOR_SESSION;
   var badge = document.getElementById('modo-badge');
-  if (badge) {
-    badge.style.background = esMesa ? 'rgba(22,163,74,.12)' : 'rgba(59,130,246,.12)';
-    badge.style.color = esMesa ? '#16a34a' : '#3b82f6';
-    badge.style.border = esMesa ? '1px solid rgba(22,163,74,.25)' : '1px solid rgba(59,130,246,.25)';
-    badge.textContent = esMesa ? '🪑 Pedido en Mesa ' + MESA_NUM : '🛵 Pedido a Domicilio';
+
+  // Modo asesor — mostrar selector de mesa
+  var mesaSelWrap = document.getElementById('asesor-mesa-sel-wrap');
+  var mesaSel = document.getElementById('asesor-mesa-sel');
+  if (esAsesor && mesaSelWrap && mesaSel) {
+    mesaSelWrap.style.display = '';
+    var mesas = ASESOR_SESSION.mesas;
+    var opts = '<option value="">Selecciona una mesa...</option>';
+    if (mesas && mesas.length) {
+      for (var m = 0; m < mesas.length; m++) opts += '<option value="'+mesas[m]+'">Mesa '+mesas[m]+'</option>';
+    } else {
+      // Sin mesas asignadas — selector libre 1-50
+      for (var m = 1; m <= 50; m++) opts += '<option value="'+m+'">Mesa '+m+'</option>';
+    }
+    mesaSel.innerHTML = opts;
+  } else if (mesaSelWrap) {
+    mesaSelWrap.style.display = 'none';
   }
+
+  if (badge) {
+    if (esAsesor) {
+      badge.style.background = 'rgba(240,165,0,.12)';
+      badge.style.color = '#f0a500';
+      badge.style.border = '1px solid rgba(240,165,0,.25)';
+      badge.textContent = '👨‍🍳 Tomando pedido — ' + ASESOR_SESSION.nombre;
+    } else {
+      badge.style.background = esMesa ? 'rgba(22,163,74,.12)' : 'rgba(59,130,246,.12)';
+      badge.style.color = esMesa ? '#16a34a' : '#3b82f6';
+      badge.style.border = esMesa ? '1px solid rgba(22,163,74,.25)' : '1px solid rgba(59,130,246,.25)';
+      badge.textContent = esMesa ? '🪑 Pedido en Mesa ' + MESA_NUM : '🛵 Pedido a Domicilio';
+    }
+  }
+
   var wWa   = document.getElementById('wrap-wa');
   var wAddr = document.getElementById('wrap-addr');
   var wCity = document.getElementById('wrap-city');
-  if (wWa)   wWa.style.display   = esMesa ? 'none' : '';
-  if (wAddr) wAddr.style.display = esMesa ? 'none' : '';
-  if (wCity) wCity.style.display = esMesa ? 'none' : '';
-  // Título del modal
+  // En modo asesor: ocultar WA y dirección (pedido en mesa)
+  var ocultarDomicilio = esMesa || esAsesor;
+  if (wWa)   wWa.style.display   = ocultarDomicilio ? 'none' : '';
+  if (wAddr) wAddr.style.display = ocultarDomicilio ? 'none' : '';
+  if (wCity) wCity.style.display = ocultarDomicilio ? 'none' : '';
+
   var ttl = document.querySelector('#m-chk .mttl');
-  if (ttl) ttl.textContent = esMesa ? '🍽️ Pedido Mesa ' + MESA_NUM : '📋 Datos del Pedido';
+  if (ttl) ttl.textContent = esAsesor ? '📋 Pedido — ' + ASESOR_SESSION.nombre : (esMesa ? '🍽️ Pedido Mesa ' + MESA_NUM : '📋 Datos del Pedido');
   document.getElementById('m-chk').classList.remove('hidden');
 }
 
@@ -1906,21 +1987,25 @@ function fillCS3() {
 }
 
 function mkOrd() {
-  var esMesa = MODO === 'mesa';
+  var esAsesor = !!ASESOR_SESSION;
+  var mesaSelVal = esAsesor ? (document.getElementById('asesor-mesa-sel') ? document.getElementById('asesor-mesa-sel').value : '') : '';
+  var mesaFinal = esAsesor ? mesaSelVal : MESA_NUM;
+  var esMesa = MODO === 'mesa' || esAsesor;
   return {
     id:    'ORD-' + Date.now().toString(36).toUpperCase().slice(-6),
     ts:    new Date().toLocaleString('es-CO'),
-    modo:  MODO,
-    mesa:  MESA_NUM || '',
-    name:  document.getElementById('cn-nm').value.trim(),
+    modo:  esAsesor ? 'mesa' : MODO,
+    mesa:  mesaFinal || '',
+    name:  document.getElementById('cn-nm').value.trim() || (esAsesor ? ASESOR_SESSION.nombre : ''),
     wa:    esMesa ? '' : document.getElementById('cn-wa').value.trim(),
-    addr:  esMesa ? 'Mesa ' + MESA_NUM : document.getElementById('cn-addr').value.trim(),
+    addr:  esMesa ? 'Mesa ' + (mesaFinal||'?') : document.getElementById('cn-addr').value.trim(),
     city:  esMesa ? '' : document.getElementById('cn-city').value.trim(),
     pay:   document.getElementById('cn-pay').value,
     notes: document.getElementById('cn-notes').value.trim(),
     items: CART.map(function(c){ return {id:c.id,name:c.name,price:c.price,qty:c.qty}; }),
     total: cartTot(),
-    status:'pending'
+    status:'pending',
+    tomadoby: esAsesor ? ASESOR_SESSION.nombre : ''
   };
 }
 
@@ -2035,8 +2120,12 @@ function placeOrd() {
 
   var waNum = (C.wa||'').replace(/[^0-9]/g,'');
   var esMesa = o.modo === 'mesa';
-  // Domicilio: siempre WhatsApp. Mesa: solo si el dueño lo activó
-  if (waNum && (!esMesa || C.mesawa)) {
+  var esAsesorMode = !!ASESOR_SESSION;
+  // Asesor: solo WhatsApp si el dueño lo activó. Domicilio: siempre. Mesa cliente: según config.
+  if (waNum && !esAsesorMode && (!esMesa || C.mesawa)) {
+    var msg = buildWAmsg(o);
+    window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
+  } else if (waNum && esAsesorMode && C.mesawa) {
     var msg = buildWAmsg(o);
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   }
@@ -2045,10 +2134,11 @@ function placeOrd() {
   document.getElementById('m-ok').classList.remove('hidden');
 
   CART = []; updCartN(); renderCat();
-  ['cn-nm','cn-wa','cn-addr','cn-city','cn-notes'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('cn-pay').value = '';
+  ['cn-nm','cn-wa','cn-addr','cn-city','cn-notes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  var payEl = document.getElementById('cn-pay'); if(payEl) payEl.value = '';
+  var mesaSelEl = document.getElementById('asesor-mesa-sel'); if(mesaSelEl) mesaSelEl.value = '';
 
-  var toastMsg = esMesa && !C.mesawa ? '🍽️ ¡Pedido registrado en caja!' : '🎉 ¡Pedido creado y enviado a WhatsApp!';
+  var toastMsg = (esMesa || esAsesorMode) && !C.mesawa ? '🍽️ ¡Pedido enviado a caja!' : '🎉 ¡Pedido creado y enviado a WhatsApp!';
   toast(toastMsg,'s');
 }
 
@@ -2086,6 +2176,11 @@ function navTo(el) {
   var sec = el.getAttribute('data-sec');
   document.querySelectorAll('.asec').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('sec-' + sec).classList.add('active');
+  // Actualizar link asesor al entrar a mesas
+  if (sec === 'mesas') {
+    var lnkEl = document.getElementById('asesor-link-txt');
+    if (lnkEl) lnkEl.textContent = generarLinkAsesor();
+  }
 }
 
 // ============================================================
@@ -2600,7 +2695,7 @@ function renderOrds() {
           '<div class="ocnm">' + o.name + '</div>' +
           '<div class="ocid">' + o.id + ' · ' + o.pay + '</div>' +
           '<div class="ocwa">📱 ' + (o.wa||'Mesa '+o.mesa) + '</div>' +
-          (o.asesorAsignado ? '<div style="font-size:12px;color:var(--cp)">👤 Asesor: '+o.asesorAsignado+'</div>' : '') +
+          (o.tomadoby ? '<div style="font-size:12px;color:var(--cp)">📝 Tomado por: '+o.tomadoby+'</div>' : (o.asesorAsignado ? '<div style="font-size:12px;color:var(--cp)">👤 Asesor: '+o.asesorAsignado+'</div>' : '')) +
           (o.asesorDespacho && o.asesorDespacho!=='—' ? '<div style="font-size:12px;color:var(--cmut)">🚀 Despachó: '+o.asesorDespacho+'</div>' : '') +
           (o.asesorCobro && o.asesorCobro!=='—' ? '<div style="font-size:12px;color:#68d391">✅ Cobró: '+o.asesorCobro+'</div>' : '') +
         '</div>' +
@@ -2933,6 +3028,22 @@ function getBaseUrl() {
   return (C.siteUrl || '').replace(/\/$/, '') || 'https://tu-restaurante.netlify.app';
 }
 
+function copiarLinkAsesor(btn) {
+  var link = generarLinkAsesor();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(function(){
+      var orig = btn.textContent;
+      btn.textContent = '✅ Copiado';
+      setTimeout(function(){ btn.textContent = orig; }, 2000);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = link; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('📋 Link copiado','s');
+  }
+}
+
 function generarMesas() {
   var n = parseInt(document.getElementById('mesa-count').value) || 10;
   if (n < 1) n = 1;
@@ -3100,7 +3211,8 @@ function guardarAsesor() {
       mesasArr = mesasVal.split(',').map(function(x){ return parseInt(x.trim()); }).filter(Boolean);
     }
   }
-  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr };
+  var activo = (document.getElementById('asesor-activo-chk') ? document.getElementById('asesor-activo-chk').checked : true);
+  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr, activo: activo };
   if (editIdx !== '') {
     ASESORES[parseInt(editIdx)] = asesor;
     toast('✅ Asesor actualizado','s');
@@ -3125,6 +3237,97 @@ function toggleAsesorTipo() {
   if (wrap) wrap.style.display = (tipo === 'mesa' || tipo === 'ambos') ? '' : 'none';
 }
 
+// ============================================================
+// MODO ASESOR — Login y sesión
+// ============================================================
+var _asesorLoginIdx = null;
+
+function iniciarModoAsesor() {
+  // Mostrar pantalla de login asesor
+  var screen = document.getElementById('asesor-login-screen');
+  if (!screen) return;
+  var activos = ASESORES.filter(function(a){ return a.activo !== false && (a.tipo==='mesa'||a.tipo==='ambos'); });
+  if (!activos.length) {
+    screen.style.display = 'flex';
+    document.getElementById('asesor-login-list').innerHTML = '<div style="color:var(--cmut);font-size:13px;padding:20px">No hay asesores activos configurados.<br>El dueño debe crear asesores en el panel admin.</div>';
+    document.getElementById('asesor-pin-login-wrap').style.display = 'none';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < ASESORES.length; i++) {
+    var a = ASESORES[i];
+    if (a.activo === false) continue;
+    var imgH = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '👤';
+    var tipoL = a.tipo==='domicilio' ? '🛵' : '🪑';
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;cursor:pointer;transition:all .2s" data-idx="'+i+'" onclick="selAsesorLogin(parseInt(this.dataset.idx))" onmouseover="this.style.background=\'rgba(240,165,0,.1)\'" onmouseout="this.style.background=\'rgba(255,255,255,.05)\'">' +
+      '<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">' + imgH + '</div>' +
+      '<div style="flex:1;text-align:left"><div style="font-weight:700;font-size:15px">' + tipoL + ' ' + a.nombre + '</div>' +
+      (a.mesas&&a.mesas.length?'<div style="font-size:12px;color:var(--cmut)">Mesas: '+a.mesas.join(', ')+'</div>':'') + '</div>' +
+      '<div style="color:var(--cp);font-size:18px">→</div>' +
+    '</div>';
+  }
+  document.getElementById('asesor-login-list').innerHTML = html;
+  document.getElementById('asesor-pin-login-wrap').style.display = 'none';
+  screen.style.display = 'flex';
+}
+
+function selAsesorLogin(idx) {
+  _asesorLoginIdx = idx;
+  var a = ASESORES[idx];
+  var imgEl = document.getElementById('asesor-login-sel-img');
+  imgEl.innerHTML = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+  document.getElementById('asesor-login-sel-name').textContent = a.nombre;
+  document.getElementById('asesor-login-list').style.display = 'none';
+  var pw = document.getElementById('asesor-pin-login-wrap');
+  pw.style.display = 'flex';
+  document.getElementById('asesor-login-pin').value = '';
+  setTimeout(function(){ document.getElementById('asesor-login-pin').focus(); }, 100);
+}
+
+function volverListaAsesores() {
+  document.getElementById('asesor-login-list').style.display = 'flex';
+  document.getElementById('asesor-login-list').style.flexDirection = 'column';
+  document.getElementById('asesor-pin-login-wrap').style.display = 'none';
+  _asesorLoginIdx = null;
+}
+
+function loginAsesorSession() {
+  if (_asesorLoginIdx === null) return;
+  var pin = document.getElementById('asesor-login-pin').value.trim();
+  var a = ASESORES[_asesorLoginIdx];
+  if (hashPin(pin) !== a.pin) { toast('❌ PIN incorrecto','e'); return; }
+  ASESOR_SESSION = { idx: _asesorLoginIdx, nombre: a.nombre, img: a.img, mesas: a.mesas||[], tipo: a.tipo };
+  // Ocultar pantalla login
+  document.getElementById('asesor-login-screen').style.display = 'none';
+  // Mostrar barra de sesión
+  var bar = document.getElementById('asesor-session-bar');
+  bar.style.display = 'flex';
+  var imgEl = document.getElementById('asesor-session-img');
+  imgEl.innerHTML = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+  document.getElementById('asesor-session-name').textContent = a.nombre;
+  var mesasStr = (a.mesas&&a.mesas.length) ? 'Mesas: '+a.mesas.join(', ') : '';
+  document.getElementById('asesor-session-mesas').textContent = mesasStr;
+  toast('👋 Bienvenido ' + a.nombre + ' — ya puedes tomar pedidos', 's');
+}
+
+function cerrarSesionAsesor() {
+  ASESOR_SESSION = null;
+  document.getElementById('asesor-session-bar').style.display = 'none';
+  iniciarModoAsesor();
+}
+
+function generarLinkAsesor() {
+  var base = getBaseUrl();
+  return base + '?modo=asesor';
+}
+
+function toggleActivoAsesor(idx) {
+  if (!ASESORES[idx]) return;
+  ASESORES[idx].activo = !ASESORES[idx].activo;
+  saveSt(); renderAsesoresList(); actualizarBarraAsesor();
+  toast(ASESORES[idx].activo ? '✅ Asesor activado' : '⭕ Asesor desactivado', 's');
+}
+
 function renderAsesoresList() {
   var el = document.getElementById('asesores-list'); if (!el) return;
   if (!ASESORES.length) {
@@ -3141,6 +3344,7 @@ function renderAsesoresList() {
       '<div class="apth" style="border-radius:50%">' + imgH + '</div>' +
       '<div class="apinf"><div class="apnm">' + a.nombre + '</div><div class="apmeta">' + tipoLabel + mesasLabel + '</div></div>' +
       '<div class="apact">' +
+        '<button class="btn bsm" style="border-radius:8px;background:'+(a.activo?'rgba(56,161,105,.2)':'rgba(255,255,255,.06)')+';color:'+(a.activo?'#68d391':'var(--cmut)')+';border:1px solid '+(a.activo?'rgba(56,161,105,.4)':'rgba(255,255,255,.1)')+'" data-idx="'+i+'" onclick="toggleActivoAsesor(parseInt(this.dataset.idx))">'+(a.activo?'✅ Activo':'⭕ Inactivo')+'</button>' +
         '<button class="btn bsm bo" data-idx="'+i+'" onclick="editarAsesor(parseInt(this.dataset.idx))">✏️</button>' +
         '<button class="btn bsm bd" data-idx="'+i+'" onclick="eliminarAsesor(parseInt(this.dataset.idx))">🗑</button>' +
       '</div></div>';
@@ -3157,6 +3361,8 @@ function editarAsesor(idx) {
   var prev = document.getElementById('prev-asesor');
   if (prev && a.img) { prev.src = a.img; prev.style.display = 'block'; }
   document.getElementById('asesor-img').value = a.img ? '(foto guardada ✓)' : '';
+  var activoChk = document.getElementById('asesor-activo-chk');
+  if (activoChk) activoChk.checked = (a.activo !== false);
   var tipoSel = document.getElementById('asesor-tipo');
   if (tipoSel) { tipoSel.value = a.tipo||'ambos'; toggleAsesorTipo(); }
   var mesasInp = document.getElementById('asesor-mesas');
@@ -3224,10 +3430,9 @@ function volverSelAsesor() {
 function cambiarAsesor() { seleccionarAsesor(); }
 
 function getAsesorDeMesa(numMesa) {
-  // Buscar asesor que tenga esa mesa asignada
   for (var i = 0; i < ASESORES.length; i++) {
     var a = ASESORES[i];
-    if ((a.tipo === 'mesa' || a.tipo === 'ambos') && a.mesas && a.mesas.indexOf(parseInt(numMesa)) !== -1) {
+    if (a.activo !== false && (a.tipo === 'mesa' || a.tipo === 'ambos') && a.mesas && a.mesas.indexOf(parseInt(numMesa)) !== -1) {
       return a.nombre;
     }
   }
@@ -3236,27 +3441,34 @@ function getAsesorDeMesa(numMesa) {
 
 var _domRoundRobin = 0;
 function getAsesorDomicilio() {
-  var doms = ASESORES.filter(function(a){ return a.tipo === 'domicilio' || a.tipo === 'ambos'; });
+  var doms = ASESORES.filter(function(a){ return (a.tipo === 'domicilio' || a.tipo === 'ambos') && a.activo !== false; });
   if (!doms.length) return null;
+  // Aleatorio ponderado — turno rotativo
   var a = doms[_domRoundRobin % doms.length];
   _domRoundRobin++;
   return a.nombre;
 }
 
 function actualizarBarraAsesor() {
-  var barActivo = document.getElementById('asesor-activo-bar');
-  var barNone   = document.getElementById('asesor-activo-bar-none');
-  if (!barActivo || !barNone) return;
-  if (ASESOR_ACTIVO) {
-    barActivo.style.display = 'flex';
-    barNone.style.display   = 'none';
-    var imgEl = document.getElementById('asesor-activo-img');
-    imgEl.innerHTML = ASESOR_ACTIVO.img ? '<img src="'+ASESOR_ACTIVO.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
-    document.getElementById('asesor-activo-nombre').textContent = ASESOR_ACTIVO.nombre;
-  } else {
-    barActivo.style.display = 'none';
-    barNone.style.display   = 'flex';
+  var chips = document.getElementById('asesores-caja-chips');
+  if (!chips) return;
+  var activos = ASESORES.filter(function(a){ return a.activo !== false; });
+  if (!activos.length) {
+    chips.innerHTML = '<div style="font-size:13px;color:var(--cmut)">Sin asesores activos — actívalos en la sección Asesores</div>';
+    return;
   }
+  var html = '';
+  for (var i = 0; i < activos.length; i++) {
+    var a = activos[i];
+    var imgH = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '👤';
+    var tipoL = a.tipo==='mesa'?'🪑':a.tipo==='domicilio'?'🛵':'🔄';
+    var mesasL = (a.mesas && a.mesas.length) ? ' M:'+a.mesas.join(',') : '';
+    html += '<div style="display:flex;align-items:center;gap:7px;padding:7px 12px;background:rgba(56,161,105,.12);border:1px solid rgba(56,161,105,.3);border-radius:50px">' +
+      '<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;flex-shrink:0">' + imgH + '</div>' +
+      '<div style="font-size:13px;font-weight:600;color:#68d391">' + tipoL + ' ' + a.nombre + mesasL + '</div>' +
+    '</div>';
+  }
+  chips.innerHTML = html;
 }
 
 // ============================================================
