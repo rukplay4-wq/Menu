@@ -3645,12 +3645,23 @@ function generarCampana() {
 
 function renderPedidosAsesor() {
   if (!ASESOR_SESSION) return;
+  var tipo = ASESOR_SESSION.tipo || 'ambos';
   var mesas = ASESOR_SESSION.mesas || [];
   var ahora = Date.now();
   var misPedidos = ORD.filter(function(o) {
     if (o.status !== 'pending' && o.status !== 'dispatched' && o.status !== 'ready') return false;
-    if (mesas.length && mesas.indexOf(parseInt(o.mesa)) === -1) return false;
-    return true;
+    if (tipo === 'domicilio') {
+      // Solo domicilios
+      return o.modo === 'domicilio' || o.modo !== 'mesa';
+    } else if (tipo === 'mesa') {
+      // Solo sus mesas asignadas
+      if (o.modo !== 'mesa') return false;
+      return mesas.length === 0 || mesas.indexOf(parseInt(o.mesa)) !== -1;
+    } else {
+      // ambos: mesas asignadas + domicilios
+      if (o.modo === 'mesa') return mesas.length === 0 || mesas.indexOf(parseInt(o.mesa)) !== -1;
+      return true;
+    }
   });
   var pendientes = misPedidos.filter(function(o){ return o.status==='pending'; }).length;
   var badge = document.getElementById('asesor-pedidos-badge');
