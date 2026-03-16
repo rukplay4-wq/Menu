@@ -412,7 +412,7 @@ function hideMask(){
 </div>
 
 <!-- BARRA ASESOR ACTIVO EN MODO ASESOR -->
-<div id="asesor-session-bar" style="display:none;background:linear-gradient(90deg,#1a0a2e,#0a1a1a);border-bottom:2px solid var(--cp);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<div id="asesor-session-bar" style="display:none;background:linear-gradient(90deg,#1a0a2e,#0a1a1a);border-bottom:2px solid var(--cp);padding:10px 16px;align-items:center;gap:10px;flex-wrap:wrap">
   <div id="asesor-session-img" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0"></div>
   <div style="flex:1">
     <div style="font-size:11px;color:var(--cmut)">Tomando pedidos como:</div>
@@ -1546,6 +1546,7 @@ var CUS  = st && st.CUS  ? st.CUS  : {};
 // Detectar mesa desde URL
 var MESA_NUM = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('mesa')||''; } catch(e){ return ''; } })();
 var MODO_ASESOR = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('modo')==='asesor'; } catch(e){ return false; } })();
+var ASESOR_DIRECTO = (function(){ try { var p=new URLSearchParams(window.location.search); var v=p.get('asesor'); if(!v) return null; var n=parseInt(v); return isNaN(n)?null:n; } catch(e){ return null; } })();
 var MODO = MESA_NUM ? 'mesa' : 'domicilio';
 var ASESOR_SESSION = null; // asesor logueado en modo asesor
 var ASESORES = [];
@@ -1559,13 +1560,32 @@ var ACAT = 'Todos';
 window.addEventListener('DOMContentLoaded', function() {
   // Modo asesor — mostrar pantalla de login
   if (MODO_ASESOR) {
-    // Ocultar botón admin
     var admBtn = document.getElementById('admbtn');
     if (admBtn) admBtn.style.display = 'none';
-    // Esperar que Firebase cargue para mostrar login
     setTimeout(function(){ iniciarModoAsesor(); }, 800);
   }
-  // Mostrar banner de mesa si viene de NFC/QR
+  // Link directo de asesor (?asesor=N) — ir directo a su PIN
+  if (ASESOR_DIRECTO !== null) {
+    var admBtn2 = document.getElementById('admbtn');
+    if (admBtn2) admBtn2.style.display = 'none';
+    setTimeout(function(){
+      var a = ASESORES[ASESOR_DIRECTO];
+      if (!a || a.activo === false) { iniciarModoAsesor(); return; }
+      var screen = document.getElementById('asesor-login-screen');
+      if (screen) screen.style.display = 'flex';
+      var titleEl = document.getElementById('asesor-login-title');
+      if (titleEl) titleEl.textContent = 'Bienvenido, ' + a.nombre;
+      document.getElementById('asesor-login-list').style.display = 'none';
+      _asesorLoginIdx = ASESOR_DIRECTO;
+      var imgEl = document.getElementById('asesor-login-sel-img');
+      if (imgEl) imgEl.innerHTML = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+      var nmEl = document.getElementById('asesor-login-sel-name');
+      if (nmEl) nmEl.textContent = a.nombre;
+      var pw = document.getElementById('asesor-pin-login-wrap');
+      if (pw) pw.style.display = 'flex';
+      setTimeout(function(){ var pi=document.getElementById('asesor-login-pin'); if(pi) pi.focus(); }, 200);
+    }, 800);
+  }
   if (MESA_NUM) {
     var mb = document.getElementById('mesa-banner');
     var mn = document.getElementById('mesa-banner-num');
@@ -3316,8 +3336,9 @@ function cerrarSesionAsesor() {
   iniciarModoAsesor();
 }
 
-function generarLinkAsesor() {
+function generarLinkAsesor(idx) {
   var base = getBaseUrl();
+  if (idx !== undefined && idx !== null && !isNaN(idx)) return base + '?asesor=' + idx;
   return base + '?modo=asesor';
 }
 
@@ -3340,10 +3361,14 @@ function renderAsesoresList() {
     var imgH = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
     var tipoLabel = a.tipo==='mesa' ? '🪑 Mesas' : a.tipo==='domicilio' ? '🛵 Domicilios' : '🔄 Ambos';
     var mesasLabel = (a.mesas && a.mesas.length) ? ' · Mesas: '+a.mesas.join(', ') : '';
-    html += '<div class="apitem">' +
+    var linkAsesor = generarLinkAsesor(i);
+    html += '<div class="apitem" style="flex-wrap:wrap">' +
       '<div class="apth" style="border-radius:50%">' + imgH + '</div>' +
-      '<div class="apinf"><div class="apnm">' + a.nombre + '</div><div class="apmeta">' + tipoLabel + mesasLabel + '</div></div>' +
-      '<div class="apact">' +
+      '<div class="apinf"><div class="apnm">' + a.nombre + '</div><div class="apmeta">' + tipoLabel + mesasLabel + '</div>' +
+      '<div style="font-size:11px;color:var(--cmut);margin-top:3px;word-break:break-all">' + linkAsesor + '</div></div>' +
+      '<div class="apact" style="flex-wrap:wrap;gap:5px">' +
+        '<button class="btn bsm" style="border-radius:8px;background:rgba(22,163,74,.15);color:#16a34a;border:1px solid rgba(22,163,74,.3)" data-link="'+linkAsesor+'" onclick="copiarLink(this.dataset.link,this)">📋 Link</button>' +
+        '<button class="btn bsm" style="border-radius:8px;background:rgba(99,102,241,.15);color:#6366f1;border:1px solid rgba(99,102,241,.3)" data-link="'+linkAsesor+'" onclick="verQR(this.dataset.link,\''+a.nombre+'\')">📲 QR</button>' +
         '<button class="btn bsm" style="border-radius:8px;background:'+(a.activo?'rgba(56,161,105,.2)':'rgba(255,255,255,.06)')+';color:'+(a.activo?'#68d391':'var(--cmut)')+';border:1px solid '+(a.activo?'rgba(56,161,105,.4)':'rgba(255,255,255,.1)')+'" data-idx="'+i+'" onclick="toggleActivoAsesor(parseInt(this.dataset.idx))">'+(a.activo?'✅ Activo':'⭕ Inactivo')+'</button>' +
         '<button class="btn bsm bo" data-idx="'+i+'" onclick="editarAsesor(parseInt(this.dataset.idx))">✏️</button>' +
         '<button class="btn bsm bd" data-idx="'+i+'" onclick="eliminarAsesor(parseInt(this.dataset.idx))">🗑</button>' +
