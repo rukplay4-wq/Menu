@@ -1528,9 +1528,9 @@ function initFirebase() {
       var ind = document.getElementById('sync-ind');
       if (ind) ind.style.display = '';
       if (typeof hideMask === 'function') hideMask();
-      // Si la URL tiene ?asesor=N, mostrar PIN ahora que ya tenemos los datos
-      if (MODO_ASESOR) { iniciarModoAsesor(); }
+      // Ahora que Firebase cargó los asesores, mostrar login
       if (ASESOR_DIRECTO !== null) { mostrarLoginAsesorDirecto(); }
+      else if (MODO_ASESOR) { iniciarModoAsesor(); }
     }
     if (document.getElementById('adm') && document.getElementById('adm').classList.contains('show')) {
       fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM(); renderAsesoresList(); actualizarBarraAsesor();
@@ -1550,36 +1550,40 @@ var CUS  = st && st.CUS  ? st.CUS  : {};
 var MESA_NUM = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('mesa')||''; } catch(e){ return ''; } })();
 var MODO_ASESOR = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('modo')==='asesor'; } catch(e){ return false; } })();
 var ASESOR_DIRECTO = (function(){ try { var p=new URLSearchParams(window.location.search); var v=p.get('asesor'); if(!v) return null; var n=parseInt(v); return isNaN(n)?null:n; } catch(e){ return null; } })();
-
-function mostrarLoginAsesorDirecto() {
-  var a = ASESORES[ASESOR_DIRECTO];
-  if (!a || a.activo === false) { iniciarModoAsesor(); return; }
-  var screen = document.getElementById('asesor-login-screen');
-  if (screen) screen.style.display = 'flex';
-  var titleEl = document.getElementById('asesor-login-title');
-  if (titleEl) titleEl.textContent = 'Bienvenido, ' + a.nombre;
-  document.getElementById('asesor-login-list').style.display = 'none';
-  _asesorLoginIdx = ASESOR_DIRECTO;
-  var imgEl = document.getElementById('asesor-login-sel-img');
-  if (imgEl) imgEl.innerHTML = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
-  var nmEl = document.getElementById('asesor-login-sel-name');
-  if (nmEl) nmEl.textContent = a.nombre;
-  var pw = document.getElementById('asesor-pin-login-wrap');
-  if (pw) pw.style.display = 'flex';
-  setTimeout(function(){ var pi=document.getElementById('asesor-login-pin'); if(pi) pi.focus(); }, 100);
-}
 var MODO = MESA_NUM ? 'mesa' : 'domicilio';
-var ASESOR_SESSION = null; // asesor logueado en modo asesor
+var ASESOR_SESSION = null;
 var ASESORES = st && st.ASESORES ? st.ASESORES : [];
-var ASESOR_ACTIVO = null; // {idx, nombre, img}
+var ASESOR_ACTIVO = null;
 var CRM_AUTH = false;
 var CART = [];
 var CS   = 1;
 var OF   = 'all';
 var ACAT = 'Todos';
 
+function mostrarLoginAsesorDirecto() {
+  var a = ASESORES[ASESOR_DIRECTO];
+  if (!a || a.activo === false) { iniciarModoAsesor(); return; }
+  var screen = document.getElementById('asesor-login-screen');
+  if (!screen) return;
+  // Título personalizado
+  var titleEl = document.getElementById('asesor-login-title');
+  if (titleEl) titleEl.textContent = 'Bienvenido, ' + a.nombre;
+  // Ocultar lista, mostrar PIN directo
+  var list = document.getElementById('asesor-login-list');
+  if (list) list.style.display = 'none';
+  _asesorLoginIdx = ASESOR_DIRECTO;
+  var imgEl = document.getElementById('asesor-login-sel-img');
+  if (imgEl) imgEl.innerHTML = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+  var nmEl = document.getElementById('asesor-login-sel-name');
+  if (nmEl) nmEl.textContent = a.nombre;
+  var pw = document.getElementById('asesor-pin-login-wrap');
+  if (pw) { pw.style.display = 'flex'; pw.style.flexDirection = 'column'; }
+  screen.style.display = 'flex';
+  setTimeout(function(){ var pi=document.getElementById('asesor-login-pin'); if(pi){ pi.value=''; pi.focus(); } }, 150);
+}
+
 window.addEventListener('DOMContentLoaded', function() {
-  // Si es modo asesor o link directo, ocultar botón admin — el login lo dispara Firebase cuando cargue
+  // Ocultar botón admin si es modo asesor — el login lo dispara Firebase cuando cargue los datos
   if (MODO_ASESOR || ASESOR_DIRECTO !== null) {
     var admBtn = document.getElementById('admbtn');
     if (admBtn) admBtn.style.display = 'none';
@@ -3367,7 +3371,7 @@ function renderAsesoresList() {
       '<div style="font-size:11px;color:var(--cmut);margin-top:3px;word-break:break-all">' + linkAsesor + '</div></div>' +
       '<div class="apact" style="flex-wrap:wrap;gap:5px">' +
         '<button class="btn bsm" style="border-radius:8px;background:rgba(22,163,74,.15);color:#16a34a;border:1px solid rgba(22,163,74,.3)" data-link="'+linkAsesor+'" onclick="copiarLink(this.dataset.link,this)">📋 Link</button>' +
-        '<button class="btn bsm" style="border-radius:8px;background:rgba(99,102,241,.15);color:#6366f1;border:1px solid rgba(99,102,241,.3)" data-link="'+linkAsesor+'" data-idx="'+i+'" onclick="verQR(this.dataset.link,\'Asesor '+i+'\')">📲 QR</button>' +
+        '<button class="btn bsm" style="border-radius:8px;background:rgba(99,102,241,.15);color:#6366f1;border:1px solid rgba(99,102,241,.3)" data-link="'+linkAsesor+'" data-nm="'+a.nombre+'" onclick="verQR(this.dataset.link, this.dataset.nm)">📲 QR</button>' +
         '<button class="btn bsm" style="border-radius:8px;background:'+(a.activo?'rgba(56,161,105,.2)':'rgba(255,255,255,.06)')+';color:'+(a.activo?'#68d391':'var(--cmut)')+';border:1px solid '+(a.activo?'rgba(56,161,105,.4)':'rgba(255,255,255,.1)')+'" data-idx="'+i+'" onclick="toggleActivoAsesor(parseInt(this.dataset.idx))">'+(a.activo?'✅ Activo':'⭕ Inactivo')+'</button>' +
         '<button class="btn bsm bo" data-idx="'+i+'" onclick="editarAsesor(parseInt(this.dataset.idx))">✏️</button>' +
         '<button class="btn bsm bd" data-idx="'+i+'" onclick="eliminarAsesor(parseInt(this.dataset.idx))">🗑</button>' +
