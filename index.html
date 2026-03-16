@@ -579,6 +579,14 @@ function hideMask(){
           <div class="ac">
             <div class="acttl">&#128222; Contacto y Redes</div>
             <div class="fg"><label class="fl">WhatsApp principal (con c&#243;digo pa&#237;s)</label><input class="fi" id="c-wa" placeholder="+573001234567" oninput="liveC()"></div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:14px">
+              <div style="font-size:11px;font-weight:800;color:var(--cp);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🪑 PEDIDOS EN MESA — WhatsApp</div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:6px">
+                <input type="checkbox" id="c-mesawa" onchange="liveC()" style="width:16px;height:16px;accent-color:var(--cp)">
+                Enviar también por WhatsApp al confirmar pedido en mesa
+              </label>
+              <div style="font-size:11px;color:var(--cmut)">Si está desactivado, los pedidos de mesa solo se registran en Caja sin abrir WhatsApp. Ideal para restaurantes donde el mesero toma el pago directamente.</div>
+            </div>
             <div class="fg"><label class="fl">🌐 URL del sitio (para generar QR de mesas)</label><input class="fi" id="c-siteurl" placeholder="https://mi-restaurante.netlify.app" oninput="liveC()"></div>
             <div class="fg"><label class="fl">NIT / Identificaci&#243;n fiscal</label><input class="fi" id="c-nit" placeholder="900.000.000-1" oninput="liveC()"></div>
             <div class="fg"><label class="fl">Tel&#233;fono visible</label><input class="fi" id="c-phone" placeholder="300 123 4567" oninput="liveC()"></div>
@@ -636,17 +644,21 @@ function hideMask(){
                       </select>
                     </div>
                     <div class="fg">
-                      <label class="fl">Fuente</label>
-                      <select class="fi" id="c-titlefont" onchange="liveC()">
-                        <option value="">Misma del sitio</option>
-                        <option value="'Playfair Display',serif">Playfair Display</option>
-                        <option value="'Montserrat',sans-serif">Montserrat</option>
-                        <option value="'Oswald',sans-serif">Oswald</option>
-                        <option value="'Roboto',sans-serif">Roboto</option>
-                        <option value="'Dancing Script',cursive">Dancing Script</option>
-                        <option value="'Bebas Neue',cursive">Bebas Neue</option>
-                      </select>
+                      <label class="fl">Color del nombre</label>
+                      <div class="csw"><input type="color" id="c-titlecolor" value="#ffffff" oninput="liveC();updHex()"><span id="c-titlecolorh">#ffffff</span></div>
                     </div>
+                  </div>
+                  <div class="fg">
+                    <label class="fl">Fuente</label>
+                    <select class="fi" id="c-titlefont" onchange="liveC()">
+                      <option value="">Misma del sitio</option>
+                      <option value="'Playfair Display',serif">Playfair Display</option>
+                      <option value="'Montserrat',sans-serif">Montserrat</option>
+                      <option value="'Oswald',sans-serif">Oswald</option>
+                      <option value="'Roboto',sans-serif">Roboto</option>
+                      <option value="'Dancing Script',cursive">Dancing Script</option>
+                      <option value="'Bebas Neue',cursive">Bebas Neue</option>
+                    </select>
                   </div>
                 </div>
                 <div style="margin-top:6px;border-top:1px solid rgba(255,255,255,.07);padding-top:14px">
@@ -1488,6 +1500,7 @@ function applyC() {
     heroTitle.style.display = (C.showtitle === false) ? 'none' : '';
     heroTitle.style.fontSize = C.titlesize || '';
     heroTitle.style.fontFamily = C.titlefont || '';
+    heroTitle.style.color = C.titlecolor || '';
   }
   document.getElementById('hero-sub').textContent   = C.sub  || '';
   var eyel = document.getElementById('hero-eyebrow');
@@ -1906,7 +1919,9 @@ function placeOrd() {
   saveSt();
 
   var waNum = (C.wa||'').replace(/[^0-9]/g,'');
-  if (waNum) {
+  var esMesa = o.modo === 'mesa';
+  // Domicilio: siempre WhatsApp. Mesa: solo si el dueño lo activó
+  if (waNum && (!esMesa || C.mesawa)) {
     var msg = buildWAmsg(o);
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   }
@@ -1918,7 +1933,8 @@ function placeOrd() {
   ['cn-nm','cn-wa','cn-addr','cn-city','cn-notes'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('cn-pay').value = '';
 
-  toast('🎉 ¡Pedido creado y enviado a WhatsApp!','s');
+  var toastMsg = esMesa && !C.mesawa ? '🍽️ ¡Pedido registrado en caja!' : '🎉 ¡Pedido creado y enviado a WhatsApp!';
+  toast(toastMsg,'s');
 }
 
 // ============================================================
@@ -2009,8 +2025,11 @@ function fillForm() {
   if (tsSel) { for(var i=0;i<tsSel.options.length;i++){ if(tsSel.options[i].value===(C.titlesize||'clamp(2rem,6vw,3.5rem)')){tsSel.selectedIndex=i;break;} } }
   var tfSel = document.getElementById('c-titlefont');
   if (tfSel) { for(var j=0;j<tfSel.options.length;j++){ if(tfSel.options[j].value===(C.titlefont||'')){tfSel.selectedIndex=j;break;} } }
+  var tcEl = document.getElementById('c-titlecolor');
+  if (tcEl) tcEl.value = C.titlecolor || '#ffffff';
   sv('c-cattl',C.cattl); sv('c-cur',  C.cur);
   sv('c-wa',   C.wa);    sv('c-nit',  C.nit);   sv('c-phone',C.phone);
+  var mwChk = document.getElementById('c-mesawa'); if(mwChk) mwChk.checked = !!C.mesawa;
   sv('c-siteurl', C.siteUrl||'');
   sv('c-ig',   C.ig);    sv('c-fb',   C.fb);     sv('c-tt',   C.tt);
   sv('c-ticker',C.ticker); sv('c-spd', C.spd);
@@ -2100,7 +2119,8 @@ function updHex() {
     ['c-ctickbg1','c-ctickbg1h'],['c-ctickbg2','c-ctickbg2h'],['c-cticktext','c-cticktexth'],
     ['c-cheroeyebrow','c-cheroeyebrowh'],['c-cherosub','c-cherosubh'],
     ['c-fsocbg','c-fsocbgh'],['c-fsocc','c-fsocch'],['c-fsocbrd','c-fsocbrdh'],
-    ['c-ovcolor','c-ovcolorh']
+    ['c-ovcolor','c-ovcolorh'],
+    ['c-titlecolor','c-titlecolorh']
   ];
   for (var i = 0; i < pairs.length; i++) {
     var inp = document.getElementById(pairs[i][0]);
@@ -2121,6 +2141,7 @@ function liveC() {
   C.titlesize = tsSel ? tsSel.value : '';
   var tfSel = document.getElementById('c-titlefont');
   C.titlefont = tfSel ? tfSel.value : '';
+  C.titlecolor = document.getElementById('c-titlecolor') ? document.getElementById('c-titlecolor').value : '#ffffff';
   var cb1s=document.getElementById('c-btn1show'); if(cb1s) C.btn1show=cb1s.checked;
   var cb2s=document.getElementById('c-btn2show'); if(cb2s) C.btn2show=cb2s.checked;
   var sa1=document.getElementById('c-btn1action'); if(sa1) C.btn1action=sa1.value;
@@ -2133,6 +2154,7 @@ function liveC() {
   var dirEl = document.getElementById('c-ctickgdir');
   if(dirEl) C.ctickgdir = dirEl.value;   C.cattl = g('c-cattl'); C.cur   = g('c-cur') || '$';
   C.wa    = g('c-wa');    C.nit   = g('c-nit');   C.phone = g('c-phone');
+  var mwEl = document.getElementById('c-mesawa'); if(mwEl) C.mesawa = mwEl.checked;
   C.siteUrl = g('c-siteurl');
   C.ig    = g('c-ig');    C.fb    = g('c-fb');     C.tt    = g('c-tt');
   var logoVal = g('c-logo');
@@ -2589,14 +2611,19 @@ function delOrd(oid) {
 function renderCRM() {
   var cl = Object.values(CUS);
   var ventas = 0;
-  for (var i = 0; i < ORD.length; i++) if (ORD[i].status==='dispatched') ventas += ORD[i].total;
+  var ventasPagadas = 0;
+  for (var i = 0; i < ORD.length; i++) {
+    if (ORD[i].status==='dispatched' || ORD[i].status==='paid') ventas += ORD[i].total;
+    if (ORD[i].status==='paid') ventasPagadas += ORD[i].total;
+  }
   var pend = ORD.filter(function(o){ return o.status==='pending'; }).length;
 
   document.getElementById('crm-stats').innerHTML =
     '<div class="stc"><div class="stv">' + cl.length + '</div><div class="stl">Clientes</div></div>' +
     '<div class="stc"><div class="stv">' + ORD.length + '</div><div class="stl">Pedidos</div></div>' +
     '<div class="stc"><div class="stv">' + pend + '</div><div class="stl">Pendientes</div></div>' +
-    '<div class="stc"><div class="stv" style="font-size:20px">' + (C.cur||'$') + fmt(ventas) + '</div><div class="stl">Ventas</div></div>';
+    '<div class="stc"><div class="stv" style="font-size:18px">' + (C.cur||'$') + fmt(ventas) + '</div><div class="stl">Total ventas</div></div>' +
+    '<div class="stc"><div class="stv" style="font-size:18px;color:#68d391">✅ ' + (C.cur||'$') + fmt(ventasPagadas) + '</div><div class="stl">Pagados</div></div>';
 
   if (!cl.length) {
     document.getElementById('crm-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--cmut)">Sin clientes aún</td></tr>';
