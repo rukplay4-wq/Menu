@@ -1955,7 +1955,16 @@ function updCS() {
   var bk = document.getElementById('chk-back');
   var nx = document.getElementById('chk-next');
   bk.classList.toggle('hidden', CS === 1);
-  if (CS === 3) { nx.textContent = '✅ Confirmar Pedido — WA se abre automático'; nx.className = 'btn bs'; }
+  if (CS === 3) {
+    var esAsesorBtn = !!ASESOR_SESSION;
+    var esMesaBtn = MODO === 'mesa';
+    if (esAsesorBtn || esMesaBtn) {
+      nx.textContent = '✅ Crear Pedido';
+    } else {
+      nx.textContent = '✅ Confirmar Pedido — WA se abre automático';
+    }
+    nx.className = 'btn bs';
+  }
   else          { nx.textContent = 'Continuar →';                   nx.className = 'btn bp'; }
   if (CS === 2) fillCS2();
   if (CS === 3) fillCS3();
@@ -2144,9 +2153,9 @@ function placeOrd() {
   var esAsesorMode = !!ASESOR_SESSION;
 
   if (esAsesorMode) {
-    // Asesor tomando pedido: solo va a caja, sin WhatsApp
+    // Asesor: solo va a caja, sin WhatsApp
   } else if (esMesa) {
-    // Cliente escaneó QR de mesa: solo notifica al negocio si mesawa está activo
+    // Cliente escanea QR mesa: notifica al negocio solo si mesawa activo
     if (C.mesawa && waNum) {
       var msg = buildWAmsg(o);
       window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
@@ -2159,15 +2168,13 @@ function placeOrd() {
     }
   }
 
+  var toastMsg = (esMesa || esAsesorMode) ? '🍽️ ¡Pedido enviado a caja!' : '🎉 ¡Pedido creado y enviado a WhatsApp!';
   closeM('m-chk');
   document.getElementById('m-ok').classList.remove('hidden');
-
   CART = []; updCartN(); renderCat();
   ['cn-nm','cn-wa','cn-addr','cn-city','cn-notes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   var payEl = document.getElementById('cn-pay'); if(payEl) payEl.value = '';
   var mesaSelEl = document.getElementById('asesor-mesa-sel'); if(mesaSelEl) mesaSelEl.value = '';
-
-  var toastMsg = (esMesa || esAsesorMode) && !C.mesawa ? '🍽️ ¡Pedido enviado a caja!' : '🎉 ¡Pedido creado y enviado a WhatsApp!';
   toast(toastMsg,'s');
 }
 
@@ -2759,7 +2766,7 @@ function markPaid(oid) {
   o.status = 'paid';
   o.paidTs = new Date().toLocaleString('es-CO');
   o.asesorCobro = ASESOR_ACTIVO ? ASESOR_ACTIVO.nombre : '—';
-  // Registrar en CRM — sin enviar WhatsApp
+  // Registrar en CRM
   if(o.wa){
     var wk = o.wa.replace(/[^0-9]/g,'');
     if(wk){
@@ -2771,7 +2778,7 @@ function markPaid(oid) {
     }
   }
   saveSt(); renderOrds(); renderCRM();
-  toast('✅ Pagado — registrado en CRM','s');
+  toast('✅ Pago recibido — registrado en CRM','s');
 }
 
 function markDevolucion(oid) {
@@ -2838,18 +2845,18 @@ function dispatchOrd(oid) {
 
   var esMesa = o.modo === 'mesa';
   if (!esMesa) {
-    // Domicilio: enviar WhatsApp al cliente con el mensaje "va en camino"
+    // Domicilio: enviar WhatsApp al cliente con mensaje completo (productos + total)
     var waCliente = (o.wa||'').replace(/[^0-9]/g,'');
     if (waCliente) {
       var msg = buildDispatchMsg(o);
       window.open('https://wa.me/' + waCliente + '?text=' + encodeURIComponent(msg), '_blank');
     }
   }
-  // Mesa: solo va a caja, sin WhatsApp
+  // Mesa: solo caja, sin WhatsApp
 
   renderOrds();
   renderCRM();
-  toast('✅ Despachado' + (!esMesa ? ' — WhatsApp abierto' : ''), 's');
+  toast(esMesa ? '✅ Despachado' : '✅ Despachado — WhatsApp enviado al cliente', 's');
 }
 
 function sendStatus(oid) {
