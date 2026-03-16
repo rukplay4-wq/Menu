@@ -1179,6 +1179,7 @@ function hideMask(){
             <span style="font-size:11px;color:var(--cmut)">Escribe un rango (1-5) o mesas separadas por coma (1,3,5)</span>
           </div>
           <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="fi" id="asesor-pin" type="password" placeholder="••••" maxlength="4" style="max-width:120px"></div>
+          <div class="fg"><label class="fl">WhatsApp del asesor (para notificarle pedidos de sus mesas)</label><input class="fi" id="asesor-wa" type="tel" placeholder="+57 300 000 0000"></div>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px">
             <input type="checkbox" id="asesor-activo-chk" checked style="width:16px;height:16px;accent-color:var(--cp)">
             Asesor activo (disponible para recibir pedidos)
@@ -1528,7 +1529,6 @@ function initFirebase() {
       var ind = document.getElementById('sync-ind');
       if (ind) ind.style.display = '';
       if (typeof hideMask === 'function') hideMask();
-      // Ahora que Firebase cargó los asesores, mostrar login
       if (ASESOR_DIRECTO !== null) { mostrarLoginAsesorDirecto(); }
       else if (MODO_ASESOR) { iniciarModoAsesor(); }
     }
@@ -1565,10 +1565,8 @@ function mostrarLoginAsesorDirecto() {
   if (!a || a.activo === false) { iniciarModoAsesor(); return; }
   var screen = document.getElementById('asesor-login-screen');
   if (!screen) return;
-  // Título personalizado
   var titleEl = document.getElementById('asesor-login-title');
   if (titleEl) titleEl.textContent = 'Bienvenido, ' + a.nombre;
-  // Ocultar lista, mostrar PIN directo
   var list = document.getElementById('asesor-login-list');
   if (list) list.style.display = 'none';
   _asesorLoginIdx = ASESOR_DIRECTO;
@@ -1583,7 +1581,6 @@ function mostrarLoginAsesorDirecto() {
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-  // Ocultar botón admin si es modo asesor — el login lo dispara Firebase cuando cargue los datos
   if (MODO_ASESOR || ASESOR_DIRECTO !== null) {
     var admBtn = document.getElementById('admbtn');
     if (admBtn) admBtn.style.display = 'none';
@@ -1971,9 +1968,11 @@ function chkNext() {
     var w = document.getElementById('cn-wa').value.trim();
     var a = document.getElementById('cn-addr').value.trim();
     var p = document.getElementById('cn-pay').value;
-    if (!n) { toast('⚠️ Ingresa tu nombre','e'); return; }
-    if (MODO !== 'mesa' && !w) { toast('⚠️ Ingresa tu WhatsApp','e'); return; }
-    if (MODO !== 'mesa' && !a) { toast('⚠️ Ingresa la dirección','e'); return; }
+    if (!n) { toast('⚠️ Ingresa el nombre del cliente','e'); return; }
+    var esAsesorChk = !!ASESOR_SESSION;
+    var esMesaChk = MODO === 'mesa';
+    if (!esAsesorChk && !esMesaChk && !w) { toast('⚠️ Ingresa tu WhatsApp','e'); return; }
+    if (!esAsesorChk && !esMesaChk && !a) { toast('⚠️ Ingresa la dirección','e'); return; }
     if (!p) { toast('⚠️ Selecciona método de pago','e'); return; }
     CS = 2;
   } else if (CS === 2) {
@@ -2144,14 +2143,39 @@ function placeOrd() {
   var waNum = (C.wa||'').replace(/[^0-9]/g,'');
   var esMesa = o.modo === 'mesa';
   var esAsesorMode = !!ASESOR_SESSION;
-  // Asesor: solo WhatsApp si el dueño lo activó. Domicilio: siempre. Mesa cliente: según config.
-  if (waNum && !esAsesorMode && (!esMesa || C.mesawa)) {
-    var msg = buildWAmsg(o);
-    window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
-  } else if (waNum && esAsesorMode && C.mesawa) {
-    var msg = buildWAmsg(o);
-    window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
+
+  // Si es pedido de mesa (cliente escaneó QR), buscar el asesor asignado y notificarle por WA
+  if (esMesa && !esAsesorMode && o.mesa) {
+    var asesorDeMesa = null;
+    for (var ai = 0; ai < ASESORES.length; ai++) {
+      var av = ASESORES[ai];
+      if (av.activo !== false && (av.tipo === 'mesa' || av.tipo === 'ambos') && av.mesas && av.mesas.indexOf(parseInt(o.mesa)) !== -1) {
+        asesorDeMesa = av; break;
+      }
+    }
+    if (asesorDeMesa && asesorDeMesa.wa) {
+      var msgAsesor = '🔔 *NUEVO PEDIDO — Mesa ' + o.mesa + '*\n' +
+        '👤 Cliente: ' + o.name + '\n' +
+        '💳 Pago: ' + o.pay + '\n\n' +
+        '🛒 *Productos:*\n';
+      for (var pi2 = 0; pi2 < o.items.length; pi2++) {
+        msgAsesor += '  • ' + o.items[pi2].name + ' x' + o.items[pi2].qty + '\n';
+      }
+      msgAsesor += '\n💰 *Total: ' + (C.cur||'$') + fmt(o.total) + '*';
+      window.open('https://wa.me/' + asesorDeMesa.wa.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msgAsesor), '_blank');
+    } else if (waNum) {
+      // Sin asesor con WA configurado — notificar al negocio
+      var msg = buildWAmsg(o);
+      window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+  } else if (!esAsesorMode && !esMesa) {
+    // Domicilio — notificar al negocio
+    if (waNum) {
+      var msg = buildWAmsg(o);
+      window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
+    }
   }
+  // Asesor tomando pedido: solo va a caja, sin abrir WhatsApp
 
   closeM('m-chk');
   document.getElementById('m-ok').classList.remove('hidden');
@@ -3235,7 +3259,7 @@ function guardarAsesor() {
     }
   }
   var activo = (document.getElementById('asesor-activo-chk') ? document.getElementById('asesor-activo-chk').checked : true);
-  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr, activo: activo };
+  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr, activo: activo, wa: (document.getElementById('asesor-wa')?document.getElementById('asesor-wa').value.trim():'') };
   if (editIdx !== '') {
     ASESORES[parseInt(editIdx)] = asesor;
     toast('✅ Asesor actualizado','s');
@@ -3248,6 +3272,7 @@ function guardarAsesor() {
   document.getElementById('asesor-pin').value = '';
   document.getElementById('asesor-img').value = '';
   document.getElementById('asesor-edit-idx').value = '';
+  var waInp = document.getElementById('asesor-wa'); if(waInp) waInp.value = '';
   _asesorImg = null;
   var prev = document.getElementById('prev-asesor');
   if (prev) { prev.src = ''; prev.style.display = 'none'; }
@@ -3371,7 +3396,7 @@ function renderAsesoresList() {
       '<div style="font-size:11px;color:var(--cmut);margin-top:3px;word-break:break-all">' + linkAsesor + '</div></div>' +
       '<div class="apact" style="flex-wrap:wrap;gap:5px">' +
         '<button class="btn bsm" style="border-radius:8px;background:rgba(22,163,74,.15);color:#16a34a;border:1px solid rgba(22,163,74,.3)" data-link="'+linkAsesor+'" onclick="copiarLink(this.dataset.link,this)">📋 Link</button>' +
-        '<button class="btn bsm" style="border-radius:8px;background:rgba(99,102,241,.15);color:#6366f1;border:1px solid rgba(99,102,241,.3)" data-link="'+linkAsesor+'" data-nm="'+a.nombre+'" onclick="verQR(this.dataset.link, this.dataset.nm)">📲 QR</button>' +
+        '<button class="btn bsm" style="border-radius:8px;background:rgba(99,102,241,.15);color:#6366f1;border:1px solid rgba(99,102,241,.3)" data-link="'+linkAsesor+'" data-nm="'+a.nombre+'" onclick="verQR(this.dataset.link,this.dataset.nm)">📲 QR</button>' +
         '<button class="btn bsm" style="border-radius:8px;background:'+(a.activo?'rgba(56,161,105,.2)':'rgba(255,255,255,.06)')+';color:'+(a.activo?'#68d391':'var(--cmut)')+';border:1px solid '+(a.activo?'rgba(56,161,105,.4)':'rgba(255,255,255,.1)')+'" data-idx="'+i+'" onclick="toggleActivoAsesor(parseInt(this.dataset.idx))">'+(a.activo?'✅ Activo':'⭕ Inactivo')+'</button>' +
         '<button class="btn bsm bo" data-idx="'+i+'" onclick="editarAsesor(parseInt(this.dataset.idx))">✏️</button>' +
         '<button class="btn bsm bd" data-idx="'+i+'" onclick="eliminarAsesor(parseInt(this.dataset.idx))">🗑</button>' +
@@ -3395,6 +3420,8 @@ function editarAsesor(idx) {
   if (tipoSel) { tipoSel.value = a.tipo||'ambos'; toggleAsesorTipo(); }
   var mesasInp = document.getElementById('asesor-mesas');
   if (mesasInp && a.mesas) mesasInp.value = a.mesas.join(',');
+  var waInp2 = document.getElementById('asesor-wa');
+  if (waInp2) waInp2.value = a.wa || '';
   toast('✏️ Editando asesor — ingresa nuevo PIN para cambiarlo','s');
 }
 
