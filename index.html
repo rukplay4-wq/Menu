@@ -426,7 +426,7 @@ function hideMask(){
   <button class="btn bsm bo" style="border-radius:8px;font-size:12px" onclick="cerrarSesionAsesor()">🚪 Salir</button>
 </div>
 
-<!-- PANEL PEDIDOS DEL ASESOR -->
+<!-- PANEL PEDIDOS DEL ASESOR EN TIEMPO REAL -->
 <div id="asesor-pedidos-panel" style="display:none;background:#0d0d1a;border-bottom:2px solid rgba(240,165,0,.2);padding:14px 16px;max-height:70vh;overflow-y:auto">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <div style="font-size:13px;font-weight:700;color:var(--cp)">📋 Pedidos de mis mesas</div>
@@ -558,7 +558,6 @@ function hideMask(){
       <div class="an" data-sec="cats" onclick="navTo(this)"><span class="ani">&#127991;&#65039;</span><span>Categor&#237;as</span></div>
       <div class="an" data-sec="orders" onclick="navTo(this)"><span class="ani">&#129534;</span><span>Caja</span></div>
       <div class="an" data-sec="crm" onclick="navTo(this)"><span class="ani">&#128202;</span><span>CRM</span></div>
-      <div class="an" data-sec="asesores" onclick="navTo(this)"><span class="ani">👥</span><span>Asesores</span></div>
       <div class="an" data-sec="mesas" onclick="navTo(this)"><span class="ani">🪑</span><span>Mesas</span></div>
       <div class="an" data-sec="security" onclick="navTo(this)"><span class="ani">&#128272;</span><span>Seguridad</span></div>
     </nav>
@@ -1151,6 +1150,54 @@ function hideMask(){
             </div>
           </div>
 
+          <!-- Campaña WhatsApp -->
+          <div class="ac" style="margin-bottom:16px">
+            <div class="acttl">📣 Campaña WhatsApp</div>
+            <div style="font-size:13px;color:var(--cmut);margin-bottom:10px">Escribe tu mensaje y genera un link directo a cada cliente para enviarlo.</div>
+            <div class="fg"><label class="fl">Mensaje de campaña</label><textarea class="fi" id="campana-msg" rows="3" placeholder="Ej: 🎉 ¡Hoy 20% de descuento! Haz tu pedido ahora 👇"></textarea></div>
+            <button class="btn bp" style="border-radius:10px" onclick="generarCampana()">📲 Generar links</button>
+            <div id="campana-lista" style="display:flex;flex-direction:column;gap:7px;margin-top:12px"></div>
+          </div>
+
+          <!-- Asesores dentro del CRM -->
+          <div class="ac" style="margin-bottom:16px">
+            <div class="acttl">👥 Asesores</div>
+            <div style="font-size:13px;color:var(--cmut);margin-bottom:14px">Crea y gestiona los asesores del restaurante.</div>
+            <div style="padding:14px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.07);margin-bottom:14px">
+              <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;margin-bottom:10px">➕ Nuevo / Editar Asesor</div>
+              <div class="fg"><label class="fl">Nombre</label><input class="fi" id="asesor-name" placeholder="Ej: Juan Carlos"></div>
+              <div class="fg">
+                <label class="fl">Foto (opcional)</label>
+                <div class="upwrap">
+                  <input class="fi" id="asesor-img" placeholder="URL o sube foto">
+                  <label class="upbtn">📷 Subir<input type="file" accept="image/*" style="display:none" onchange="upAsesorImg(event)"></label>
+                </div>
+                <img id="prev-asesor" class="imgprev" style="width:64px;height:64px;border-radius:50%" src="" alt="">
+              </div>
+              <div class="fg">
+                <label class="fl">Tipo de asesor</label>
+                <select class="fi" id="asesor-tipo" onchange="toggleAsesorTipo()">
+                  <option value="ambos">🔄 Mesas y Domicilios</option>
+                  <option value="mesa">🪑 Solo Mesas</option>
+                  <option value="domicilio">🛵 Solo Domicilios</option>
+                </select>
+              </div>
+              <div id="asesor-mesas-wrap" class="fg" style="display:none">
+                <label class="fl">Mesas asignadas (ej: 1-5 o 1,3,5)</label>
+                <input class="fi" id="asesor-mesas" placeholder="Ej: 1-5 o 1,3,5,7">
+                <span style="font-size:11px;color:var(--cmut)">Escribe un rango (1-5) o mesas separadas por coma (1,3,5)</span>
+              </div>
+              <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="fi" id="asesor-pin" type="password" placeholder="••••" maxlength="4" style="max-width:120px"></div>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px">
+                <input type="checkbox" id="asesor-activo-chk" checked style="width:16px;height:16px;accent-color:var(--cp)">
+                Asesor activo
+              </label>
+              <button class="btn bp" style="border-radius:10px" onclick="guardarAsesor()">💾 Guardar Asesor</button>
+              <input type="hidden" id="asesor-edit-idx" value="">
+            </div>
+            <div id="asesores-list" class="apl"></div>
+          </div>
+
           <!-- Cambiar PIN CRM -->
           <div class="ac" style="max-width:380px">
             <div class="acttl">🔑 Cambiar PIN del CRM</div>
@@ -1161,45 +1208,6 @@ function hideMask(){
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- ASESORES -->
-      <section class="asec" id="sec-asesores">
-        <div class="asttl">👥 Asesores</div>
-        <div class="assub">Crea los asesores que atienden el restaurante. Cada uno tiene nombre, foto y PIN de acceso.</div>
-        <div class="ac" style="max-width:480px;margin-bottom:18px">
-          <div class="acttl">➕ Nuevo Asesor</div>
-          <div class="fg"><label class="fl">Nombre</label><input class="fi" id="asesor-name" placeholder="Ej: Juan Carlos"></div>
-          <div class="fg">
-            <label class="fl">Foto (opcional)</label>
-            <div class="upwrap">
-              <input class="fi" id="asesor-img" placeholder="URL o sube foto">
-              <label class="upbtn">📷 Subir<input type="file" accept="image/*" style="display:none" onchange="upAsesorImg(event)"></label>
-            </div>
-            <img id="prev-asesor" class="imgprev" style="width:64px;height:64px;border-radius:50%" src="" alt="">
-          </div>
-          <div class="fg">
-            <label class="fl">Tipo de asesor</label>
-            <select class="fi" id="asesor-tipo" onchange="toggleAsesorTipo()">
-              <option value="ambos">🔄 Mesas y Domicilios</option>
-              <option value="mesa">🪑 Solo Mesas</option>
-              <option value="domicilio">🛵 Solo Domicilios</option>
-            </select>
-          </div>
-          <div id="asesor-mesas-wrap" class="fg" style="display:none">
-            <label class="fl">Mesas asignadas (ej: 1-5 o 1,3,5)</label>
-            <input class="fi" id="asesor-mesas" placeholder="Ej: 1-5 o 1,3,5,7">
-            <span style="font-size:11px;color:var(--cmut)">Escribe un rango (1-5) o mesas separadas por coma (1,3,5)</span>
-          </div>
-          <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="fi" id="asesor-pin" type="password" placeholder="••••" maxlength="4" style="max-width:120px"></div>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px">
-            <input type="checkbox" id="asesor-activo-chk" checked style="width:16px;height:16px;accent-color:var(--cp)">
-            Asesor activo (disponible para recibir pedidos)
-          </label>
-          <button class="btn bp" style="border-radius:10px" onclick="guardarAsesor()">💾 Guardar Asesor</button>
-          <input type="hidden" id="asesor-edit-idx" value="">
-        </div>
-        <div id="asesores-list" class="apl"></div>
       </section>
 
       <!-- MESAS -->
@@ -2708,7 +2716,7 @@ function delCat(idx) {
 // ============================================================
 function renderOrds() {
   var el = document.getElementById('orders-list');
-  var list = OF === 'all' ? ORD : ORD.filter(function(o){ return o.status === OF; });
+  var list = OF === 'all' ? ORD.filter(function(o){ return o.status==='pending'||o.status==='dispatched'; }) : ORD.filter(function(o){ return o.status === OF; });
   if (!list.length) {
     el.innerHTML = '<div class="empty"><span class="ei">🧾</span><h3>Sin pedidos</h3><p>Los pedidos aparecerán cuando los clientes compren</p></div>';
     return;
@@ -2944,7 +2952,7 @@ function renderCRM() {
       '<td><span class="badge bb">' + ((c.orders||[]).length) + '</span></td>' +
       '<td style="color:var(--cp);font-weight:700">' + (C.cur||'$') + fmt(c.totalSpent||0) + '</td>' +
       '<td style="font-size:12px;color:var(--cmut)">' + (c.lastOrder||'—') + '</td>' +
-      '<td><button class="btn bsm bo" data-wk="' + wk + '" onclick="showHist(this.dataset.wk)">Ver</button></td></tr>';
+      '<td><button class="btn bsm bo" data-wk="' + wk + '" onclick="showHist(this.dataset.wk)">Ver</button> <button class="btn bsm" style="background:rgba(240,165,0,.12);color:var(--cp);border:1px solid rgba(240,165,0,.3)" data-wk="' + wk + '" onclick="editarCliente(this.dataset.wk)">✏️</button></td></tr>';
   }
   document.getElementById('crm-tbody').innerHTML = html;
 }
@@ -3581,80 +3589,85 @@ function cambiarPinCRM() {
   toast('✅ PIN del CRM actualizado','s');
 }
 
-// ============================================================
-// PANEL PEDIDOS EN TIEMPO REAL — ASESOR
-// ============================================================
+function editarCliente(wk) {
+  var c = CUS[wk]; if (!c) return;
+  var nuevoNombre = prompt('Nombre del cliente:', c.name);
+  if (nuevoNombre === null) return;
+  var nuevoWa = prompt('WhatsApp del cliente:', c.wa);
+  if (nuevoWa === null) return;
+  if (!nuevoNombre.trim()) { toast('⚠️ El nombre no puede estar vacío','e'); return; }
+  var nuevoWaClean = nuevoWa.replace(/[^0-9]/g,'');
+  if (nuevoWaClean && nuevoWaClean !== wk) {
+    CUS[nuevoWaClean] = Object.assign({}, c, {name:nuevoNombre.trim(), wa:nuevoWa.trim()});
+    delete CUS[wk];
+  } else {
+    CUS[wk].name = nuevoNombre.trim();
+    CUS[wk].wa   = nuevoWa.trim();
+  }
+  saveSt(); renderCRM();
+  toast('✅ Cliente actualizado','s');
+}
+
+function generarCampana() {
+  var msg = document.getElementById('campana-msg').value.trim();
+  if (!msg) { toast('⚠️ Escribe un mensaje de campaña','e'); return; }
+  var cl = Object.values(CUS);
+  if (!cl.length) { toast('⚠️ No hay clientes registrados aún','e'); return; }
+  var html = ''; var count = 0;
+  for (var i = 0; i < cl.length; i++) {
+    var c = cl[i];
+    var wk = c.wa.replace(/[^0-9]/g,'');
+    if (!wk) continue;
+    count++;
+    var link = 'https://wa.me/' + wk + '?text=' + encodeURIComponent(msg);
+    html += '<a href="' + link + '" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.25);border-radius:10px;text-decoration:none">' +
+      '<span style="font-size:18px">💬</span>' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--ctxt)">' + c.name + '</div>' +
+      '<div style="font-size:11px;color:var(--cmut)">' + c.wa + '</div></div>' +
+      '<span style="font-size:12px;color:#25d366;font-weight:700">Enviar →</span></a>';
+  }
+  document.getElementById('campana-lista').innerHTML = html || '<div style="color:var(--cmut);font-size:13px">Sin clientes con WhatsApp</div>';
+  toast('✅ ' + count + ' links generados','s');
+}
+
 function renderPedidosAsesor() {
   if (!ASESOR_SESSION) return;
   var mesas = ASESOR_SESSION.mesas || [];
   var ahora = Date.now();
-
-  // Filtrar pedidos pendientes o despachados de sus mesas
   var misPedidos = ORD.filter(function(o) {
     if (o.status !== 'pending' && o.status !== 'dispatched') return false;
     if (mesas.length && mesas.indexOf(parseInt(o.mesa)) === -1) return false;
     return true;
   });
-
-  // Actualizar badge
+  var pendientes = misPedidos.filter(function(o){ return o.status==='pending'; }).length;
   var badge = document.getElementById('asesor-pedidos-badge');
-  var pendientes = misPedidos.filter(function(o){ return o.status === 'pending'; }).length;
-  if (badge) {
-    if (pendientes > 0) {
-      badge.textContent = pendientes;
-      badge.style.display = 'flex';
-    } else {
-      badge.style.display = 'none';
-    }
-  }
-
+  if (badge) { if (pendientes > 0) { badge.textContent = pendientes; badge.style.display = 'flex'; } else { badge.style.display = 'none'; } }
   var lista = document.getElementById('asesor-pedidos-lista');
   if (!lista) return;
-
-  if (!misPedidos.length) {
-    lista.innerHTML = '<div style="text-align:center;padding:24px;color:var(--cmut);font-size:13px">Sin pedidos activos en tus mesas</div>';
-    return;
-  }
-
-  // Ordenar: pendientes primero, luego por tiempo
-  misPedidos.sort(function(a, b) {
-    if (a.status === 'pending' && b.status !== 'pending') return -1;
-    if (a.status !== 'pending' && b.status === 'pending') return 1;
-    return (a.ts > b.ts) ? 1 : -1;
-  });
-
+  if (!misPedidos.length) { lista.innerHTML = '<div style="text-align:center;padding:24px;color:var(--cmut);font-size:13px">Sin pedidos activos en tus mesas</div>'; return; }
+  misPedidos.sort(function(a,b){ if(a.status==='pending'&&b.status!=='pending') return -1; if(a.status!=='pending'&&b.status==='pending') return 1; return 0; });
   var html = '';
   for (var i = 0; i < misPedidos.length; i++) {
     var o = misPedidos[i];
     var esPendiente = o.status === 'pending';
-    var minutos = o._ts ? Math.floor((ahora - o._ts) / 60000) : '—';
-    var urgente = typeof minutos === 'number' && minutos >= 15;
+    var minutos = o._ts ? Math.floor((ahora - o._ts) / 60000) : null;
+    var urgente = minutos !== null && minutos >= 15;
     var colorBorde = urgente ? 'rgba(229,62,62,.5)' : esPendiente ? 'rgba(240,165,0,.3)' : 'rgba(56,161,105,.3)';
     var colorFondo = urgente ? 'rgba(229,62,62,.07)' : esPendiente ? 'rgba(240,165,0,.06)' : 'rgba(56,161,105,.06)';
-    var tiempoBadge = typeof minutos === 'number'
-      ? '<span style="background:' + (urgente?'rgba(229,62,62,.2)':'rgba(240,165,0,.15)') + ';color:' + (urgente?'#fc8181':'#f0a500') + ';border:1px solid ' + (urgente?'rgba(229,62,62,.4)':'rgba(240,165,0,.3)') + ';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">' + minutos + ' min</span>'
-      : '';
-    var estadoBadge = esPendiente
-      ? '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Pendiente</span>'
-      : '<span style="background:rgba(56,161,105,.15);color:#68d391;border:1px solid rgba(56,161,105,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🚀 Despachado</span>';
+    var tiempoBadge = minutos !== null ? '<span style="background:'+(urgente?'rgba(229,62,62,.2)':'rgba(240,165,0,.15)')+';color:'+(urgente?'#fc8181':'#f0a500')+';border:1px solid '+(urgente?'rgba(229,62,62,.4)':'rgba(240,165,0,.3)')+';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">'+minutos+' min</span>' : '';
+    var estadoBadge = esPendiente ? '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Pendiente</span>' : '<span style="background:rgba(56,161,105,.15);color:#68d391;border:1px solid rgba(56,161,105,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🚀 Despachado</span>';
     var items = '';
     for (var j = 0; j < o.items.length; j++) {
-      items += '<div style="font-size:12px;color:var(--cmut);display:flex;justify-content:space-between;padding:1px 0">' +
-        '<span>' + o.items[j].name + ' x' + o.items[j].qty + '</span>' +
-        '<span>' + (C.cur||'$') + fmt(o.items[j].price * o.items[j].qty) + '</span></div>';
+      items += '<div style="font-size:12px;color:var(--cmut);display:flex;justify-content:space-between;padding:1px 0"><span>'+o.items[j].name+' x'+o.items[j].qty+'</span><span>'+(C.cur||'$')+fmt(o.items[j].price*o.items[j].qty)+'</span></div>';
     }
-    var botonDespachar = esPendiente
-      ? '<button onclick="asesorDespacharPedido(\'' + o.id + '\')" style="background:#276749;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;width:100%">✅ Marcar listo</button>'
-      : '';
-    html += '<div style="background:' + colorFondo + ';border:1px solid ' + colorBorde + ';border-radius:12px;padding:12px;margin-bottom:10px">' +
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">' +
-        '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">Mesa ' + o.mesa + '</span>' +
-        estadoBadge + tiempoBadge +
-      '</div>' +
-      items +
-      '<div style="font-size:11px;color:var(--cmut);margin-top:6px">👤 ' + o.name + ' · ' + o.pay + ' · ' + (C.cur||'$') + fmt(o.total) + '</div>' +
-      botonDespachar +
-    '</div>';
+    var botonListo = esPendiente ? '<button onclick="asesorDespacharPedido(\''+o.id+'\')" style="background:#276749;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;width:100%">✅ Marcar listo</button>' : '';
+    html += '<div style="background:'+colorFondo+';border:1px solid '+colorBorde+';border-radius:12px;padding:12px;margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+
+        '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">Mesa '+o.mesa+'</span>'+
+        estadoBadge+tiempoBadge+
+      '</div>'+items+
+      '<div style="font-size:11px;color:var(--cmut);margin-top:6px">👤 '+o.name+' · '+o.pay+' · '+(C.cur||'$')+fmt(o.total)+'</div>'+
+      botonListo+'</div>';
   }
   lista.innerHTML = html;
 }
@@ -3676,7 +3689,7 @@ function asesorDespacharPedido(oid) {
   o.asesorDespacho = ASESOR_SESSION ? ASESOR_SESSION.nombre : '—';
   saveSt();
   renderPedidosAsesor();
-  toast('✅ Pedido Mesa ' + o.mesa + ' marcado como listo', 's');
+  toast('✅ Mesa ' + o.mesa + ' marcada como lista', 's');
 }
 
 function renderPts() {
