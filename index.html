@@ -5,6 +5,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>html,body{background:#07070f!important}</style>
 <title>Mi Tienda</title>
 <link id="gfonts" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&family=Raleway:wght@400;600;700;800&family=Oswald:wght@400;600;700&family=Lato:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -330,7 +331,7 @@ select.fi option{background:#111122}
 </head>
 <body>
 <style>
-#pgmask{position:fixed;inset:0;z-index:99999;background:#07070f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .35s ease}
+#pgmask{position:fixed;inset:0;z-index:99999;background:#07070f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s ease}
 #pgmask.fade{opacity:0;pointer-events:none}
 #pgmask-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:rgba(255,255,255,.4);border-radius:50%;animation:_msp .7s linear infinite}
 @keyframes _msp{to{transform:rotate(360deg)}}
@@ -507,6 +508,7 @@ function hideMask(){
       <div class="an" data-sec="cats" onclick="navTo(this)"><span class="ani">&#127991;&#65039;</span><span>Categor&#237;as</span></div>
       <div class="an" data-sec="orders" onclick="navTo(this)"><span class="ani">&#129534;</span><span>Caja</span></div>
       <div class="an" data-sec="crm" onclick="navTo(this)"><span class="ani">&#128202;</span><span>CRM</span></div>
+      <div class="an" data-sec="asesores" onclick="navTo(this)"><span class="ani">👥</span><span>Asesores</span></div>
       <div class="an" data-sec="mesas" onclick="navTo(this)"><span class="ani">🪑</span><span>Mesas</span></div>
       <div class="an" data-sec="security" onclick="navTo(this)"><span class="ani">&#128272;</span><span>Seguridad</span></div>
     </nav>
@@ -1035,7 +1037,19 @@ function hideMask(){
       <!-- ORDERS -->
       <section class="asec" id="sec-orders">
         <div class="asttl">Caja de Pedidos</div>
-        <div class="assub">Al despachar, se abre WhatsApp autom&#225;ticamente con el mensaje completo al cliente.</div>
+        <div class="assub">Al despachar, se abre WhatsApp automáticamente con el mensaje completo al cliente.</div>
+        <!-- Asesor activo -->
+        <div id="asesor-activo-bar" style="display:none;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div id="asesor-activo-info" style="display:flex;align-items:center;gap:8px;flex:1">
+            <div id="asesor-activo-img" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0"></div>
+            <div><div style="font-size:11px;color:var(--cmut)">Atendiendo:</div><div id="asesor-activo-nombre" style="font-weight:700;font-size:14px;color:var(--cp)"></div></div>
+          </div>
+          <button class="btn bsm bo" style="border-radius:8px;font-size:12px" onclick="cambiarAsesor()">🔄 Cambiar</button>
+        </div>
+        <div id="asesor-activo-bar-none" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;color:var(--cmut)">👤 Ningún asesor activo</span>
+          <button class="btn bsm bp" style="border-radius:8px" onclick="seleccionarAsesor()">Seleccionar Asesor</button>
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
           <button class="btn bsm bp" id="of-all" onclick="filtOrds('all')">Todos</button>
           <button class="btn bsm bo" id="of-pend" onclick="filtOrds('pending')">⏳ Pendientes</button>
@@ -1048,22 +1062,97 @@ function hideMask(){
 
       <!-- CRM -->
       <section class="asec" id="sec-crm">
-        <div class="asttl">CRM &#8212; Clientes y Ventas</div>
-        <div class="assub">Historial de clientes y estad&#237;sticas.</div>
-        <div class="crmst" id="crm-stats"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;flex-wrap:wrap;gap:10px">
-          <div style="font-weight:700">Clientes registrados</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn bsm bo" onclick="exportCRM()">&#128228; Exportar</button>
-            <label class="btn bsm bo" style="cursor:pointer">&#128229; Importar<input type="file" accept=".json" style="display:none" onchange="importCRM(event)"></label>
+        <div class="asttl">📊 CRM — Clientes y Ventas</div>
+        <div class="assub">Exclusivo del dueño. Requiere PIN de acceso.</div>
+
+        <!-- LOCK CRM -->
+        <div id="crm-lock" style="text-align:center;padding:40px 20px">
+          <div style="font-size:48px;margin-bottom:12px">🔐</div>
+          <div style="font-size:17px;font-weight:700;margin-bottom:6px">Acceso Restringido</div>
+          <div style="font-size:13px;color:var(--cmut);margin-bottom:20px">Solo el dueño puede acceder al CRM</div>
+          <div style="max-width:280px;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+            <div style="position:relative">
+              <input class="fi" id="crm-pin-in" type="password" placeholder="••••" maxlength="6" onkeydown="if(event.key==='Enter')crmLogin()" style="text-align:center;font-size:20px;letter-spacing:6px">
+            </div>
+            <button class="btn bp" style="border-radius:10px" onclick="crmLogin()">🔓 Entrar</button>
           </div>
         </div>
-        <div style="overflow-x:auto">
-          <table class="crmt">
-            <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Pedidos</th><th>Gastado</th><th>&#218;ltimo pedido</th><th></th></tr></thead>
-            <tbody id="crm-tbody"></tbody>
-          </table>
+
+        <!-- CONTENIDO CRM -->
+        <div id="crm-content" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn bsm bo" onclick="exportCRM()">📤 Exportar</button>
+              <label class="btn bsm bo" style="cursor:pointer">📥 Importar<input type="file" accept=".json" style="display:none" onchange="importCRM(event)"></label>
+            </div>
+            <button class="btn bsm bo" onclick="crmLogout()" style="border-radius:8px;font-size:12px">🔒 Cerrar CRM</button>
+          </div>
+
+          <!-- Stats -->
+          <div class="crmst" id="crm-stats"></div>
+
+          <!-- Reporte por asesor -->
+          <div class="ac" style="margin-bottom:16px">
+            <div class="acttl">👥 Reporte por Asesor</div>
+            <div id="crm-asesores-report" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+
+          <!-- Clientes -->
+          <div class="ac" style="margin-bottom:16px">
+            <div class="acttl">👤 Clientes (domicilios)</div>
+            <div style="overflow-x:auto">
+              <table class="crmt">
+                <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Pedidos</th><th>Gastado</th><th>Último pedido</th><th></th></tr></thead>
+                <tbody id="crm-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Cambiar PIN CRM -->
+          <div class="ac" style="max-width:380px">
+            <div class="acttl">🔑 Cambiar PIN del CRM</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <input class="fi" id="crm-pin-cur" type="password" placeholder="PIN actual" maxlength="6">
+              <input class="fi" id="crm-pin-new" type="password" placeholder="Nuevo PIN" maxlength="6">
+              <button class="btn bp" style="border-radius:10px" onclick="cambiarPinCRM()">💾 Actualizar PIN</button>
+            </div>
+          </div>
         </div>
+      </section>
+
+      <!-- ASESORES -->
+      <section class="asec" id="sec-asesores">
+        <div class="asttl">👥 Asesores</div>
+        <div class="assub">Crea los asesores que atienden el restaurante. Cada uno tiene nombre, foto y PIN de acceso.</div>
+        <div class="ac" style="max-width:480px;margin-bottom:18px">
+          <div class="acttl">➕ Nuevo Asesor</div>
+          <div class="fg"><label class="fl">Nombre</label><input class="fi" id="asesor-name" placeholder="Ej: Juan Carlos"></div>
+          <div class="fg">
+            <label class="fl">Foto (opcional)</label>
+            <div class="upwrap">
+              <input class="fi" id="asesor-img" placeholder="URL o sube foto">
+              <label class="upbtn">📷 Subir<input type="file" accept="image/*" style="display:none" onchange="upAsesorImg(event)"></label>
+            </div>
+            <img id="prev-asesor" class="imgprev" style="width:64px;height:64px;border-radius:50%" src="" alt="">
+          </div>
+          <div class="fg">
+            <label class="fl">Tipo de asesor</label>
+            <select class="fi" id="asesor-tipo" onchange="toggleAsesorTipo()">
+              <option value="ambos">🔄 Mesas y Domicilios</option>
+              <option value="mesa">🪑 Solo Mesas</option>
+              <option value="domicilio">🛵 Solo Domicilios</option>
+            </select>
+          </div>
+          <div id="asesor-mesas-wrap" class="fg" style="display:none">
+            <label class="fl">Mesas asignadas (ej: 1-5 o 1,3,5)</label>
+            <input class="fi" id="asesor-mesas" placeholder="Ej: 1-5 o 1,3,5,7">
+            <span style="font-size:11px;color:var(--cmut)">Escribe un rango (1-5) o mesas separadas por coma (1,3,5)</span>
+          </div>
+          <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="fi" id="asesor-pin" type="password" placeholder="••••" maxlength="4" style="max-width:120px"></div>
+          <button class="btn bp" style="border-radius:10px" onclick="guardarAsesor()">💾 Guardar Asesor</button>
+          <input type="hidden" id="asesor-edit-idx" value="">
+        </div>
+        <div id="asesores-list" class="apl"></div>
       </section>
 
       <!-- MESAS -->
@@ -1170,6 +1259,27 @@ function hideMask(){
   </div>
 </div>
 
+<!-- MODAL ASESOR -->
+<div id="m-asesor" class="mov movc hidden" onclick="if(event.target===this)closeM('m-asesor')">
+  <div class="mbox" style="border-radius:16px;max-width:400px">
+    <div class="mhdr"><span class="mttl">👥 ¿Quién está atendiendo?</span><span class="mclose" onclick="closeM('m-asesor')">✕</span></div>
+    <div class="mbody">
+      <div id="asesor-selector" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div id="asesor-pin-wrap" style="display:none;margin-top:14px">
+        <div style="text-align:center;margin-bottom:12px">
+          <div id="asesor-sel-img" style="width:64px;height:64px;border-radius:50%;margin:0 auto 8px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden"></div>
+          <div id="asesor-sel-name" style="font-weight:700;font-size:16px"></div>
+        </div>
+        <div class="fg"><label class="fl">Ingresa tu PIN</label>
+          <input class="fi" id="asesor-pin-input" type="password" placeholder="••••" maxlength="4" style="text-align:center;font-size:24px;letter-spacing:8px" onkeydown="if(event.key==='Enter')confirmarAsesor()">
+        </div>
+        <button class="btn bp w100" style="border-radius:10px" onclick="confirmarAsesor()">✅ Confirmar</button>
+        <button class="btn bo w100" style="border-radius:10px;margin-top:8px" onclick="volverSelAsesor()">← Volver</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL LOGIN -->
 <div id="m-login" class="mov movc hidden">
   <div class="mbox" style="border-radius:16px;max-width:330px">
@@ -1230,6 +1340,7 @@ var DC = {
   fhead:'Playfair Display', fbody:'DM Sans',
   pwd:'03035579a7f2c9d1e8b4',
   dispMsg:'🚛 *¡TU PEDIDO VA EN CAMINO!* 🚛\n¡Pronto llegará a tu puerta! 🙏',
+  crmPin:'',  // hash del PIN del CRM
   fsocbg:'rgba(255,255,255,0.13)',fsocbrd:'rgba(255,255,255,0.30)',fsocc:'#e0e0f0',fsocrad:'50px',
   ovcolor:'#000000', ovopacity:0
 };
@@ -1312,7 +1423,7 @@ function stripBase64(obj, cb) {
 
 function saveSt() {
   var ts = Date.now();
-  var data = {C:C, P:P, CATS:CATS, ORD:ORD, CUS:CUS, _ts: ts};
+  var data = {C:C, P:P, CATS:CATS, ORD:ORD, CUS:CUS, ASESORES:ASESORES, _ts: ts};
   try { localStorage.setItem(SK, JSON.stringify(data)); } catch(e) {}
   if (db) {
     window._saving = true;
@@ -1366,6 +1477,7 @@ function initFirebase() {
     if (data.CATS) CATS = data.CATS;
     if (data.ORD)  ORD  = data.ORD;
     if (data.CUS)  CUS  = data.CUS;
+    if (data.ASESORES) ASESORES = data.ASESORES;
     try { localStorage.setItem(SK, JSON.stringify({C:C,P:P,CATS:CATS,ORD:ORD,CUS:CUS,_ts:data._ts||Date.now()})); } catch(e) {}
     applyC(); renderCat(); renderTicker();
     if (!_loaded) {
@@ -1376,7 +1488,7 @@ function initFirebase() {
       if (typeof hideMask === 'function') hideMask();
     }
     if (document.getElementById('adm') && document.getElementById('adm').classList.contains('show')) {
-      fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM();
+      fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM(); renderAsesoresList(); actualizarBarraAsesor();
     }
   }, function(err) {
     console.warn('Firebase listener error:', err);
@@ -1392,6 +1504,9 @@ var CUS  = st && st.CUS  ? st.CUS  : {};
 // Detectar mesa desde URL
 var MESA_NUM = (function(){ try { var p=new URLSearchParams(window.location.search); return p.get('mesa')||''; } catch(e){ return ''; } })();
 var MODO = MESA_NUM ? 'mesa' : 'domicilio';
+var ASESORES = [];
+var ASESOR_ACTIVO = null; // {idx, nombre, img}
+var CRM_AUTH = false;
 var CART = [];
 var CS   = 1;
 var OF   = 'all';
@@ -1960,7 +2075,7 @@ function doLogin() {
   document.getElementById('pwd-in').value = '';
   closeM('m-login');
   document.getElementById('adm').classList.add('show');
-  fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM();
+  fillForm(); renderProdList(); renderCatList(); renderOrds(); renderCRM(); renderAsesoresList(); actualizarBarraAsesor();
 }
 
 function closeAdm() { document.getElementById('adm').classList.remove('show'); }
@@ -2484,7 +2599,10 @@ function renderOrds() {
         '<div>' +
           '<div class="ocnm">' + o.name + '</div>' +
           '<div class="ocid">' + o.id + ' · ' + o.pay + '</div>' +
-          '<div class="ocwa">📱 ' + o.wa + '</div>' +
+          '<div class="ocwa">📱 ' + (o.wa||'Mesa '+o.mesa) + '</div>' +
+          (o.asesorAsignado ? '<div style="font-size:12px;color:var(--cp)">👤 Asesor: '+o.asesorAsignado+'</div>' : '') +
+          (o.asesorDespacho && o.asesorDespacho!=='—' ? '<div style="font-size:12px;color:var(--cmut)">🚀 Despachó: '+o.asesorDespacho+'</div>' : '') +
+          (o.asesorCobro && o.asesorCobro!=='—' ? '<div style="font-size:12px;color:#68d391">✅ Cobró: '+o.asesorCobro+'</div>' : '') +
         '</div>' +
         '<div><div>' + sb + '</div><div class="octime">' + o.ts + '</div></div>' +
       '</div>' +
@@ -2516,6 +2634,7 @@ function markPaid(oid) {
   if(!o) return;
   o.status = 'paid';
   o.paidTs = new Date().toLocaleString('es-CO');
+  o.asesorCobro = ASESOR_ACTIVO ? ASESOR_ACTIVO.nombre : '—';
   // Registrar en CRM
   if(o.wa){
     var wk = o.wa.replace(/[^0-9]/g,'');
@@ -2572,17 +2691,31 @@ function dispatchOrd(oid) {
 
   o.status = 'dispatched';
   o.dispTs = new Date().toLocaleString('es-CO');
+  o.asesorDespacho = ASESOR_ACTIVO ? ASESOR_ACTIVO.nombre : '—';
 
   if (CUS[o.cusId]) {
     CUS[o.cusId].lastDisp = o.dispTs;
     CUS[o.cusId].dispatched = (CUS[o.cusId].dispatched||0) + 1;
   }
+  // Auto-asignar asesor
+  if (o.modo === 'mesa' && o.mesa) {
+    var asMesa = getAsesorDeMesa(o.mesa);
+    if (asMesa) o.asesorAsignado = asMesa;
+  } else if (ASESOR_ACTIVO) {
+    o.asesorAsignado = ASESOR_ACTIVO.nombre;
+  } else {
+    var asDom = getAsesorDomicilio();
+    if (asDom) o.asesorAsignado = asDom;
+  }
+
   saveSt();
 
-  var waNum = o.wa.replace(/[^0-9]/g,'');
-  if (!waNum) { toast('⚠️ El pedido no tiene número de WhatsApp','e'); renderOrds(); renderCRM(); return; }
+  var esMesa = o.modo === 'mesa';
+  // Mesa: enviar al WhatsApp del negocio. Domicilio: enviar al WhatsApp del cliente
+  var waTarget = esMesa ? (C.wa||'').replace(/[^0-9]/g,'') : o.wa.replace(/[^0-9]/g,'');
+  if (!waTarget) { toast('⚠️ No hay número de WhatsApp configurado','e'); renderOrds(); renderCRM(); return; }
   var msg = buildDispatchMsg(o);
-  window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
+  window.open('https://wa.me/' + waTarget + '?text=' + encodeURIComponent(msg), '_blank');
 
   renderOrds();
   renderCRM();
@@ -2609,6 +2742,7 @@ function delOrd(oid) {
 // CRM
 // ============================================================
 function renderCRM() {
+  if (!CRM_AUTH) return;
   var cl = Object.values(CUS);
   var ventas = 0;
   var ventasPagadas = 0;
@@ -2617,6 +2751,27 @@ function renderCRM() {
     if (ORD[i].status==='paid') ventasPagadas += ORD[i].total;
   }
   var pend = ORD.filter(function(o){ return o.status==='pending'; }).length;
+
+  // Reporte por asesor
+  var reportEl = document.getElementById('crm-asesores-report');
+  if (reportEl && ASESORES.length) {
+    var rhtml = '';
+    for (var ai = 0; ai < ASESORES.length; ai++) {
+      var ase = ASESORES[ai];
+      var pedidosAse = ORD.filter(function(o){ return o.asesorAsignado===ase.nombre || o.asesorDespacho===ase.nombre || o.asesorCobro===ase.nombre; });
+      var cobradosAse = ORD.filter(function(o){ return o.asesorCobro===ase.nombre; });
+      var totalAse = cobradosAse.reduce(function(s,o){ return s+o.total; },0);
+      var imgH2 = ase.img ? '<img src="'+ase.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+      var tipoL = ase.tipo==='mesa'?'🪑':ase.tipo==='domicilio'?'🛵':'🔄';
+      rhtml += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.04);border-radius:10px">' +
+        '<div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">' + imgH2 + '</div>' +
+        '<div style="flex:1"><div style="font-weight:700">' + tipoL + ' ' + ase.nombre + '</div>' +
+        '<div style="font-size:12px;color:var(--cmut)">' + pedidosAse.length + ' pedidos · ' + cobradosAse.length + ' cobrados</div></div>' +
+        '<div style="font-weight:700;color:var(--cp)">' + (C.cur||'$') + fmt(totalAse) + '</div>' +
+      '</div>';
+    }
+    reportEl.innerHTML = rhtml || '<div style="color:var(--cmut);font-size:13px">Sin actividad de asesores aún</div>';
+  }
 
   document.getElementById('crm-stats').innerHTML =
     '<div class="stc"><div class="stv">' + cl.length + '</div><div class="stl">Clientes</div></div>' +
@@ -2890,6 +3045,262 @@ function imprimirQR() {
     '<button onclick="window.print()">🖨️ Imprimir</button>' +
     '</body></html>');
   w.document.close();
+}
+
+// ============================================================
+// ASESORES
+// ============================================================
+var _asesorSelIdx = null;
+var _asesorImg = null;
+
+function hashPin(s) {
+  var h = 0;
+  for (var i = 0; i < s.length; i++) h = Math.imul(31,h) + s.charCodeAt(i)|0;
+  return (h>>>0).toString(16) + 'pin';
+}
+
+function upAsesorImg(ev) {
+  var file = ev.target.files[0]; if (!file) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var c = document.createElement('canvas');
+      c.width = 200; c.height = 200;
+      c.getContext('2d').drawImage(img, 0, 0, 200, 200);
+      _asesorImg = c.toDataURL('image/jpeg', 0.8);
+      var prev = document.getElementById('prev-asesor');
+      if (prev) { prev.src = _asesorImg; prev.style.display = 'block'; }
+      var inp = document.getElementById('asesor-img');
+      if (inp) inp.value = '(foto subida ✓)';
+    };
+    img.src = e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+function guardarAsesor() {
+  var nombre = document.getElementById('asesor-name').value.trim();
+  var pin    = document.getElementById('asesor-pin').value.trim();
+  var imgVal = document.getElementById('asesor-img').value;
+  var editIdx = document.getElementById('asesor-edit-idx').value;
+  if (!nombre) { toast('⚠️ Ingresa el nombre del asesor','e'); return; }
+  if (!pin || pin.length < 4) { toast('⚠️ El PIN debe tener 4 dígitos','e'); return; }
+  var finalImg = _asesorImg || (imgVal && !imgVal.startsWith('(') ? imgVal : '');
+  var tipo = document.getElementById('asesor-tipo').value || 'ambos';
+  var mesasVal = document.getElementById('asesor-mesas').value.trim();
+  // Parsear mesas: "1-5" → [1,2,3,4,5] o "1,3,5" → [1,3,5]
+  var mesasArr = [];
+  if (tipo !== 'domicilio' && mesasVal) {
+    if (mesasVal.indexOf('-') !== -1) {
+      var parts = mesasVal.split('-');
+      var from = parseInt(parts[0]); var to = parseInt(parts[1]);
+      for (var m = from; m <= to; m++) mesasArr.push(m);
+    } else {
+      mesasArr = mesasVal.split(',').map(function(x){ return parseInt(x.trim()); }).filter(Boolean);
+    }
+  }
+  var asesor = { nombre: nombre, img: finalImg, pin: hashPin(pin), tipo: tipo, mesas: mesasArr };
+  if (editIdx !== '') {
+    ASESORES[parseInt(editIdx)] = asesor;
+    toast('✅ Asesor actualizado','s');
+  } else {
+    ASESORES.push(asesor);
+    toast('✅ Asesor creado','s');
+  }
+  // Limpiar form
+  document.getElementById('asesor-name').value = '';
+  document.getElementById('asesor-pin').value = '';
+  document.getElementById('asesor-img').value = '';
+  document.getElementById('asesor-edit-idx').value = '';
+  _asesorImg = null;
+  var prev = document.getElementById('prev-asesor');
+  if (prev) { prev.src = ''; prev.style.display = 'none'; }
+  saveSt(); renderAsesoresList();
+}
+
+function toggleAsesorTipo() {
+  var tipo = document.getElementById('asesor-tipo').value;
+  var wrap = document.getElementById('asesor-mesas-wrap');
+  if (wrap) wrap.style.display = (tipo === 'mesa' || tipo === 'ambos') ? '' : 'none';
+}
+
+function renderAsesoresList() {
+  var el = document.getElementById('asesores-list'); if (!el) return;
+  if (!ASESORES.length) {
+    el.innerHTML = '<div class="empty"><span class="ei">👥</span><h3>Sin asesores</h3><p>Agrega tu primer asesor</p></div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < ASESORES.length; i++) {
+    var a = ASESORES[i];
+    var imgH = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+    var tipoLabel = a.tipo==='mesa' ? '🪑 Mesas' : a.tipo==='domicilio' ? '🛵 Domicilios' : '🔄 Ambos';
+    var mesasLabel = (a.mesas && a.mesas.length) ? ' · Mesas: '+a.mesas.join(', ') : '';
+    html += '<div class="apitem">' +
+      '<div class="apth" style="border-radius:50%">' + imgH + '</div>' +
+      '<div class="apinf"><div class="apnm">' + a.nombre + '</div><div class="apmeta">' + tipoLabel + mesasLabel + '</div></div>' +
+      '<div class="apact">' +
+        '<button class="btn bsm bo" data-idx="'+i+'" onclick="editarAsesor(parseInt(this.dataset.idx))">✏️</button>' +
+        '<button class="btn bsm bd" data-idx="'+i+'" onclick="eliminarAsesor(parseInt(this.dataset.idx))">🗑</button>' +
+      '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function editarAsesor(idx) {
+  var a = ASESORES[idx]; if (!a) return;
+  document.getElementById('asesor-name').value = a.nombre;
+  document.getElementById('asesor-pin').value = '';
+  document.getElementById('asesor-edit-idx').value = idx;
+  _asesorImg = a.img || null;
+  var prev = document.getElementById('prev-asesor');
+  if (prev && a.img) { prev.src = a.img; prev.style.display = 'block'; }
+  document.getElementById('asesor-img').value = a.img ? '(foto guardada ✓)' : '';
+  var tipoSel = document.getElementById('asesor-tipo');
+  if (tipoSel) { tipoSel.value = a.tipo||'ambos'; toggleAsesorTipo(); }
+  var mesasInp = document.getElementById('asesor-mesas');
+  if (mesasInp && a.mesas) mesasInp.value = a.mesas.join(',');
+  toast('✏️ Editando asesor — ingresa nuevo PIN para cambiarlo','s');
+}
+
+function eliminarAsesor(idx) {
+  if (!confirm('¿Eliminar este asesor?')) return;
+  ASESORES.splice(idx, 1);
+  if (ASESOR_ACTIVO && ASESOR_ACTIVO.idx === idx) ASESOR_ACTIVO = null;
+  saveSt(); renderAsesoresList(); actualizarBarraAsesor();
+  toast('🗑 Asesor eliminado','s');
+}
+
+function seleccionarAsesor() {
+  if (!ASESORES.length) { toast('⚠️ Primero crea asesores en la sección Asesores','e'); return; }
+  _asesorSelIdx = null;
+  var sel = document.getElementById('asesor-selector');
+  var html = '';
+  for (var i = 0; i < ASESORES.length; i++) {
+    var a = ASESORES[i];
+    var imgH = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '👤';
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer" data-idx="'+i+'" onclick="pedirPinAsesor(parseInt(this.dataset.idx))">' +
+      '<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">' + imgH + '</div>' +
+      '<div style="font-weight:600;font-size:15px">' + a.nombre + '</div>' +
+      '<div style="margin-left:auto;color:var(--cp)">→</div>' +
+    '</div>';
+  }
+  sel.innerHTML = html;
+  document.getElementById('asesor-pin-wrap').style.display = 'none';
+  sel.style.display = 'flex';
+  document.getElementById('m-asesor').classList.remove('hidden');
+}
+
+function pedirPinAsesor(idx) {
+  _asesorSelIdx = idx;
+  var a = ASESORES[idx];
+  var imgEl = document.getElementById('asesor-sel-img');
+  imgEl.innerHTML = a.img ? '<img src="'+a.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+  document.getElementById('asesor-sel-name').textContent = a.nombre;
+  document.getElementById('asesor-pin-input').value = '';
+  document.getElementById('asesor-selector').style.display = 'none';
+  document.getElementById('asesor-pin-wrap').style.display = 'block';
+  setTimeout(function(){ document.getElementById('asesor-pin-input').focus(); }, 100);
+}
+
+function confirmarAsesor() {
+  if (_asesorSelIdx === null) return;
+  var pin = document.getElementById('asesor-pin-input').value.trim();
+  var a = ASESORES[_asesorSelIdx];
+  if (hashPin(pin) !== a.pin) { toast('❌ PIN incorrecto','e'); return; }
+  ASESOR_ACTIVO = { idx: _asesorSelIdx, nombre: a.nombre, img: a.img };
+  closeM('m-asesor');
+  actualizarBarraAsesor();
+  toast('👋 Bienvenido ' + a.nombre, 's');
+}
+
+function volverSelAsesor() {
+  document.getElementById('asesor-pin-wrap').style.display = 'none';
+  document.getElementById('asesor-selector').style.display = 'flex';
+  _asesorSelIdx = null;
+}
+
+function cambiarAsesor() { seleccionarAsesor(); }
+
+function getAsesorDeMesa(numMesa) {
+  // Buscar asesor que tenga esa mesa asignada
+  for (var i = 0; i < ASESORES.length; i++) {
+    var a = ASESORES[i];
+    if ((a.tipo === 'mesa' || a.tipo === 'ambos') && a.mesas && a.mesas.indexOf(parseInt(numMesa)) !== -1) {
+      return a.nombre;
+    }
+  }
+  return null;
+}
+
+var _domRoundRobin = 0;
+function getAsesorDomicilio() {
+  var doms = ASESORES.filter(function(a){ return a.tipo === 'domicilio' || a.tipo === 'ambos'; });
+  if (!doms.length) return null;
+  var a = doms[_domRoundRobin % doms.length];
+  _domRoundRobin++;
+  return a.nombre;
+}
+
+function actualizarBarraAsesor() {
+  var barActivo = document.getElementById('asesor-activo-bar');
+  var barNone   = document.getElementById('asesor-activo-bar-none');
+  if (!barActivo || !barNone) return;
+  if (ASESOR_ACTIVO) {
+    barActivo.style.display = 'flex';
+    barNone.style.display   = 'none';
+    var imgEl = document.getElementById('asesor-activo-img');
+    imgEl.innerHTML = ASESOR_ACTIVO.img ? '<img src="'+ASESOR_ACTIVO.img+'" style="width:100%;height:100%;object-fit:cover">' : '👤';
+    document.getElementById('asesor-activo-nombre').textContent = ASESOR_ACTIVO.nombre;
+  } else {
+    barActivo.style.display = 'none';
+    barNone.style.display   = 'flex';
+  }
+}
+
+// ============================================================
+// CRM PIN
+// ============================================================
+function hashCrmPin(s) {
+  var h = 0;
+  for (var i = 0; i < s.length; i++) h = Math.imul(31,h) + s.charCodeAt(i)|0;
+  return (h>>>0).toString(16) + 'crm';
+}
+
+function crmLogin() {
+  var pin = document.getElementById('crm-pin-in').value.trim();
+  var master = hashCrmPin('54702');
+  var stored = C.crmPin || master;
+  if (hashCrmPin(pin) !== stored && hashCrmPin(pin) !== master) {
+    toast('❌ PIN incorrecto','e'); return;
+  }
+  CRM_AUTH = true;
+  document.getElementById('crm-lock').style.display = 'none';
+  document.getElementById('crm-content').style.display = 'block';
+  document.getElementById('crm-pin-in').value = '';
+  renderCRM();
+  toast('✅ Acceso concedido','s');
+}
+
+function crmLogout() {
+  CRM_AUTH = false;
+  document.getElementById('crm-lock').style.display = 'block';
+  document.getElementById('crm-content').style.display = 'none';
+}
+
+function cambiarPinCRM() {
+  var cur = document.getElementById('crm-pin-cur').value.trim();
+  var nw  = document.getElementById('crm-pin-new').value.trim();
+  var master = hashCrmPin('54702');
+  var stored = C.crmPin || master;
+  if (hashCrmPin(cur) !== stored && hashCrmPin(cur) !== master) { toast('❌ PIN actual incorrecto','e'); return; }
+  if (!nw || nw.length < 4) { toast('⚠️ El PIN debe tener al menos 4 dígitos','e'); return; }
+  C.crmPin = hashCrmPin(nw);
+  saveSt();
+  document.getElementById('crm-pin-cur').value = '';
+  document.getElementById('crm-pin-new').value = '';
+  toast('✅ PIN del CRM actualizado','s');
 }
 
 function renderPts() {
