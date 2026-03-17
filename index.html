@@ -214,7 +214,6 @@ select.fi option{background:#111122}
 #adm-top{background:#0d0d1a;border-bottom:1px solid rgba(255,255,255,.07);padding:0 18px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 #adm-top h1{font-family:'Playfair Display',serif;font-size:18px;color:var(--cp)}
 .adm-wrap{display:flex;flex:1;overflow:hidden}
-#adm-nav{width:200px;background:#0a0a15;border-right:1px solid rgba(255,255,255,.06);padding:12px 9px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;flex-shrink:0}
 .an{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--cmut);cursor:pointer;border:1px solid transparent;transition:all .2s}
 .an:hover{background:rgba(255,255,255,.05);color:var(--ctxt)}
 .an.active{background:rgba(240,165,0,.12);border-color:rgba(240,165,0,.24);color:var(--cp)}
@@ -344,7 +343,6 @@ select.fi option{background:#111122}
   #catalog{padding:56px 40px}
   #pgrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
   .agrid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
-  #adm-nav{width:220px;padding:16px 12px}
   .an{font-size:14px;padding:11px 14px}
   #adm-main{padding:28px 36px}
   .ocard{max-width:700px}
@@ -360,10 +358,13 @@ select.fi option{background:#111122}
   #adm-main{padding:32px 48px}
 }
 @media(max-width:660px){
-  #adm-nav{position:fixed;bottom:0;left:0;right:0;width:100%;flex-direction:row;overflow-x:auto;border-right:none;border-top:1px solid rgba(255,255,255,.06);padding:5px;z-index:10;gap:2px}
-  .an{flex-direction:column;gap:2px;padding:6px 7px;font-size:10px;min-width:54px;text-align:center}
-  .ani{font-size:18px}.adm-wrap{flex-direction:column}
-  #adm-main{padding:14px;padding-bottom:82px}
+  #adm-nav{position:fixed;top:0;bottom:0;left:0;width:260px;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.08);border-top:none;padding:0 9px 12px;z-index:1001;gap:2px;transform:translateX(-100%)}
+  #adm-nav.open{transform:translateX(0)}
+  .an{flex-direction:row;gap:10px;padding:10px 12px;font-size:13px;min-width:unset;text-align:left}
+  .ani{font-size:16px}
+  .adm-wrap{flex-direction:row}
+  #adm-main{padding:14px}
+  .nav-section{display:block}
 }
 @media(max-width:640px){#pgrid{grid-template-columns:repeat(2,1fr)!important;gap:10px}}
 @media(max-width:360px){#pgrid{grid-template-columns:repeat(2,1fr)!important;gap:7px}}
@@ -666,11 +667,7 @@ function hideMask(){
         </div>
       </div>
       <div id="cs3" class="hidden">
-        <p style="text-align:center;color:var(--cmut);font-size:13px;margin-bottom:13px">Vista previa de tu recibo:</p>
         <div id="tkt-prev"></div>
-        <div class="confirm-box">
-          <p>&#9989; Al confirmar, tu pedido llega a caja y se abre WhatsApp autom&#225;ticamente para notificar a la tienda</p>
-        </div>
       </div>
     </div>
     <div class="mftr">
@@ -2495,7 +2492,16 @@ function updCS() {
     if (esAsesorBtn || esMesaBtn) {
       nx.textContent = '✅ Crear Pedido';
     } else {
-      nx.textContent = '✅ Confirmar Pedido — WA se abre automático';
+      var payValBtn = document.getElementById('cn-pay') ? document.getElementById('cn-pay').value : '';
+      var esDigitalBtn = payValBtn && payValBtn.indexOf('Efectivo')===-1 && payValBtn.indexOf('Tarjeta')===-1 && payValBtn !== '';
+      var esMesaBtn = MODO === 'mesa' || !!ASESOR_SESSION;
+      if (!esMesaBtn && esDigitalBtn && tienePagoDigital()) {
+        nx.textContent = '✅ Confirmar y ver ticket de pago';
+      } else if (!esMesaBtn) {
+        nx.textContent = '✅ Confirmar Pedido';
+      } else {
+        nx.textContent = '✅ Crear Pedido';
+      }
     }
     nx.className = 'btn bs';
   }
@@ -2547,7 +2553,22 @@ function fillCS2() {
 }
 
 function fillCS3() {
-  document.getElementById('tkt-prev').innerHTML = buildTkt(mkOrd());
+  var orden = mkOrd();
+  var esMesa = MODO === 'mesa' || !!ASESOR_SESSION;
+  var payVal = document.getElementById('cn-pay') ? document.getElementById('cn-pay').value : '';
+  var esDigital = payVal && payVal.indexOf('Efectivo') === -1 && payVal.indexOf('Tarjeta') === -1 && payVal !== '';
+
+  // Si hay pago digital configurado Y es domicilio con método digital → mostrar ticket con QR
+  if (!esMesa && esDigital && tienePagoDigital()) {
+    document.getElementById('tkt-prev').innerHTML = generarTicketHTML(orden, false) +
+      '<div style="padding:12px;background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.15);border-radius:10px;margin-top:12px;font-size:12px;color:var(--cmut);text-align:center">' +
+      '✅ Al confirmar, tu pedido llega a caja y recibirás el ticket completo para pagar</div>';
+  } else {
+    // Ticket normal con nota de confirmación
+    document.getElementById('tkt-prev').innerHTML = buildTkt(orden) +
+      '<div style="padding:12px;background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.15);border-radius:10px;margin-top:12px;font-size:12px;color:var(--cmut);text-align:center">' +
+      '✅ Al confirmar, tu pedido llega a caja' + (!esMesa ? ' y se notifica por WhatsApp' : '') + '</div>';
+  }
 }
 
 function mkOrd() {
@@ -2712,21 +2733,19 @@ function placeOrd() {
   var mesaSelEl = document.getElementById('asesor-mesa-sel'); if(mesaSelEl) mesaSelEl.value = '';
   toast(toastMsg,'s');
 
-  // Celebración y pago digital
+  // Celebración
   setTimeout(function(){
     lanzarCelebracion();
+    // Pago digital en domicilio — mostrar ticket
     if (!esAsesorMode && !esMesa) {
-      // Domicilio — mostrar ticket de pago si eligió método digital
       var payVal = o.pay || '';
-      var esDigital = payVal && payVal !== '💵 Efectivo — contra entrega' && payVal !== '💳 Tarjeta' && payVal.indexOf('Efectivo') === -1 && payVal.indexOf('Tarjeta') === -1;
-      if (esDigital || tienePagoDigital()) {
-        setTimeout(function(){ mostrarPagoDigital(o, false); }, 800);
-      } else {
-        setTimeout(mostrarCalificacion, 2500);
+      var esDigital = payVal && payVal.indexOf('Efectivo') === -1 && payVal.indexOf('Tarjeta') === -1 && payVal !== '';
+      if (esDigital && tienePagoDigital()) {
+        setTimeout(function(){ mostrarPagoDigital(o, false); }, 600);
       }
-    } else if (!esAsesorMode) {
-      setTimeout(mostrarCalificacion, 2500);
     }
+    // Calificación SOLO en mesa y SOLO cuando paga (reportarPago la dispara)
+    // NO aquí al pedir
   }, 300);
 }
 
@@ -5020,16 +5039,16 @@ function renderPanelCocina() {
       ? '<span style="background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.4);border-radius:50px;padding:2px 10px;font-size:12px;font-weight:700">✅ Preparado</span>'
       : '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 10px;font-size:12px;font-weight:700">⏳ Por preparar</span>';
 
-    // Items desglosados
+    // Items desglosados — solo nombre y cantidad, sin precio
     var itemsHtml = '';
     for (var j = 0; j < o.items.length; j++) {
       var it = o.items[j];
-      itemsHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
-        '<span style="font-size:14px;font-weight:600;color:var(--ctxt)">' + it.name + '</span>' +
-        '<span style="font-size:16px;font-weight:800;color:var(--cp);background:rgba(240,165,0,.1);border-radius:6px;padding:2px 10px">x' + it.qty + '</span>' +
+      itemsHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<span style="font-size:15px;font-weight:600;color:var(--ctxt)">' + it.name + '</span>' +
+        '<span style="font-size:18px;font-weight:800;color:var(--cp);background:rgba(240,165,0,.1);border-radius:6px;padding:2px 12px">x' + it.qty + '</span>' +
         '</div>';
       if (it.notas) {
-        itemsHtml += '<div style="font-size:11px;color:#f0a500;padding:2px 0 6px">📝 ' + it.notas + '</div>';
+        itemsHtml += '<div style="font-size:12px;color:#f0a500;padding:2px 0 6px">📝 ' + it.notas + '</div>';
       }
     }
 
@@ -5464,8 +5483,9 @@ function reportarPago() {
   }
   closeM('m-pago-digital');
   toast('✅ Pago reportado — el negocio fue notificado', 's');
-  // Actualizar estado en caja
   renderOrds();
+  // Calificación del servicio — ahora sí, cuando el cliente pagó
+  setTimeout(mostrarCalificacion, 1000);
 }
 
 function solicitarRecibo() {
