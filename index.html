@@ -413,7 +413,7 @@ function hideMask(){
   <div class="hact" style="display:none">
   </div>
   <div class="hact">
-    <button id="pwa-install-btn" onclick="instalarPWA()" style="display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;transition:transform .15s;line-height:1"><span id="pwa-btn-ico">📲</span><span id="pwa-btn-label">Instalar App</span></button>
+    <button id="pwa-install-btn" onclick="instalarPWA()" style="display:none;align-items:center;gap:6px;padding:7px 13px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--chtxt);transition:background .2s"><span id="pwa-btn-ico">📲</span><span id="pwa-btn-label">Instalar App</span></button>
     <button id="admbtn" onclick="openLogin()">&#9881;&#65039; Admin</button>
     <div id="cart-fab" onclick="openCart()">&#128722;<span id="cart-n" class="hidden">0</span></div>
   </div>
@@ -5127,10 +5127,19 @@ function aplicarPWAFab() {
   // Aplicar estilo al botón según selección
   btn.style.background = '';
   btn.style.border = '';
-  btn.style.color = txt;
-  if (estilo === 'pill' || estilo === 'card') {
-    btn.style.background = bg;
-    btn.style.border = 'none';
+  btn.style.color = '';
+  // Si no hay config personalizada usar mismo estilo que botón Admin
+  if (!C.pwaBg || !C.pwaEstilo || C.pwaEstilo === 'pill') {
+    if (C.pwaBg && C.pwaBg !== '#f0a500') {
+      btn.style.background = bg;
+      btn.style.border = 'none';
+      btn.style.color = txt;
+    } else {
+      // Estilo por defecto = igual al botón Admin
+      btn.style.background = 'rgba(255,255,255,.07)';
+      btn.style.border = '1px solid rgba(255,255,255,.1)';
+      btn.style.color = 'var(--chtxt)';
+    }
   } else if (estilo === 'outline') {
     btn.style.background = 'transparent';
     btn.style.border = '1.5px solid ' + bg;
@@ -5139,9 +5148,10 @@ function aplicarPWAFab() {
     btn.style.background = 'rgba(' + hexToRgb(bg) + ',.15)';
     btn.style.border = '1px solid rgba(' + hexToRgb(bg) + ',.35)';
     btn.style.color = bg;
-  } else if (estilo === 'split') {
+  } else {
     btn.style.background = bg;
     btn.style.border = 'none';
+    btn.style.color = txt;
   }
   // Mostrar u ocultar según config
   if (C.pwaActivo) {
