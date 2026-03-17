@@ -312,7 +312,7 @@ select.fi option{background:#111122}
 #adm-nav{width:220px;background:#0a0a15;border-right:1px solid rgba(255,255,255,.06);padding:0 9px 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex-shrink:0;position:fixed;top:0;bottom:0;left:0;z-index:1001}
 
 /* ── BOTÓN PWA FLOTANTE ── */
-#pwa-fab{position:fixed;bottom:24px;right:24px;z-index:990;display:none;animation:fabIn .4s cubic-bezier(.34,1.56,.64,1)}
+#pwa-fab{display:none!important}
 @keyframes fabIn{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
 #pwa-fab-inner{display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:50px;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
 #pwa-fab-inner:hover{transform:scale(1.04)}
@@ -413,7 +413,7 @@ function hideMask(){
   <div class="hact" style="display:none">
   </div>
   <div class="hact">
-    <button id="pwa-install-btn" onclick="instalarPWA()" style="display:none;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);color:var(--cp);padding:7px 12px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer">📲 Instalar App</button>
+    <button id="pwa-install-btn" onclick="instalarPWA()" style="display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;transition:transform .15s;line-height:1"><span id="pwa-btn-ico">📲</span><span id="pwa-btn-label">Instalar App</span></button>
     <button id="admbtn" onclick="openLogin()">&#9881;&#65039; Admin</button>
     <div id="cart-fab" onclick="openCart()">&#128722;<span id="cart-n" class="hidden">0</span></div>
   </div>
@@ -5112,53 +5112,44 @@ function actualizarNavLogo() {
 
 // ── BOTÓN PWA FLOTANTE ──
 function aplicarPWAFab() {
-  var fab = document.getElementById('pwa-fab');
-  if (!fab) return;
-  if (!C.pwaActivo) { fab.style.display = 'none'; return; }
-  // Solo mostrar si el PWA es instalable (beforeinstallprompt) o ya se vio
-  if (_deferredPrompt || C.pwaActivo) {
-    fab.style.display = 'block';
-  }
-  // Aplicar estilos
-  var inner = document.getElementById('pwa-fab-inner');
-  var titulo = document.getElementById('pwa-fab-title');
-  var sub = document.getElementById('pwa-fab-sub');
-  var ico = document.getElementById('pwa-fab-ico');
-  var pulse = document.getElementById('pwa-fab-pulse');
-  var bg = C.pwaBg || '#f0a500';
+  var btn = document.getElementById('pwa-install-btn');
+  if (!btn) return;
+  var bg  = C.pwaBg  || '#f0a500';
   var txt = C.pwaTxt || '#000000';
+  var ico = C.pwaIco || '📲';
+  var titulo = C.pwaTitulo || 'Instalar App';
   var estilo = C.pwaEstilo || 'pill';
-  if (titulo) titulo.textContent = C.pwaTitulo || 'Descarga PedidoClik';
-  if (titulo) titulo.style.color = txt;
-  if (sub) sub.textContent = C.pwaSub || 'Gratis · Sin internet';
-  if (sub) sub.style.color = txt;
-  if (ico) ico.textContent = C.pwaIco || '📲';
-  // Estilos según diseño
-  if (inner) {
-    inner.style.background = '';
-    inner.style.border = '';
-    inner.style.boxShadow = '';
-    if (estilo === 'pill') {
-      inner.style.background = bg;
-      inner.style.boxShadow = '0 4px 20px rgba(0,0,0,.25)';
-    } else if (estilo === 'card') {
-      inner.style.background = bg;
-      inner.style.borderRadius = '16px';
-      inner.style.boxShadow = '0 8px 32px rgba(0,0,0,.3)';
-    } else if (estilo === 'split') {
-      inner.style.background = 'linear-gradient(90deg,' + bg + ' 70%,rgba(0,0,0,.3) 70%)';
-      inner.style.boxShadow = '0 4px 20px rgba(0,0,0,.25)';
-    } else if (estilo === 'outline') {
-      inner.style.background = 'rgba(0,0,0,.7)';
-      inner.style.border = '2px solid ' + bg;
-      inner.style.backdropFilter = 'blur(8px)';
-    } else if (estilo === 'glass') {
-      inner.style.background = 'rgba(' + hexToRgb(bg) + ',.12)';
-      inner.style.border = '1px solid rgba(' + hexToRgb(bg) + ',.3)';
-      inner.style.backdropFilter = 'blur(12px)';
-    }
+  // Actualizar texto e ícono
+  var icoEl = document.getElementById('pwa-btn-ico');
+  var lblEl = document.getElementById('pwa-btn-label');
+  if (icoEl) icoEl.textContent = ico;
+  if (lblEl) lblEl.textContent = titulo;
+  // Aplicar estilo al botón según selección
+  btn.style.background = '';
+  btn.style.border = '';
+  btn.style.color = txt;
+  if (estilo === 'pill' || estilo === 'card') {
+    btn.style.background = bg;
+    btn.style.border = 'none';
+  } else if (estilo === 'outline') {
+    btn.style.background = 'transparent';
+    btn.style.border = '1.5px solid ' + bg;
+    btn.style.color = bg;
+  } else if (estilo === 'glass') {
+    btn.style.background = 'rgba(' + hexToRgb(bg) + ',.15)';
+    btn.style.border = '1px solid rgba(' + hexToRgb(bg) + ',.35)';
+    btn.style.color = bg;
+  } else if (estilo === 'split') {
+    btn.style.background = bg;
+    btn.style.border = 'none';
   }
-  if (pulse) pulse.style.setProperty('--pwa-color', bg);
+  // Mostrar u ocultar según config
+  if (C.pwaActivo) {
+    btn.style.display = 'inline-flex';
+  } else {
+    btn.style.display = 'none';
+  }
+  renderPWAPreview();
 }
 
 function hexToRgb(hex) {
