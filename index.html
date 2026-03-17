@@ -498,11 +498,28 @@ function hideMask(){
   </div>
   <div id="asesor-session-mesas" style="font-size:12px;color:var(--cmut)"></div>
   <span id="alerta-represados" style="display:none;background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3);border-radius:50px;padding:3px 8px;font-size:11px;font-weight:600"></span>
+  <button class="btn bsm bo" style="border-radius:8px;font-size:12px;position:relative" onclick="togglePanelPedidos()">
+    📋 Mis Pedidos
+    <span id="asesor-pedidos-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#e53e3e;color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center">0</span>
+  </button>
+  <button class="btn bsm bo" style="border-radius:8px;font-size:12px;position:relative" onclick="toggleAlertasCocina()">
+    🍳 Cocina
+    <span id="cocina-alertas-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#fb923c;color:#000;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center">0</span>
+  </button>
   <button class="btn bsm bo" style="border-radius:8px;font-size:12px;position:relative" onclick="togglePanelAvisos()">
     🔔 Avisos
     <span id="avisos-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#f0a500;color:#000;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center">0</span>
   </button>
   <button class="btn bsm bo" style="border-radius:8px;font-size:12px" onclick="cerrarSesionAsesor()">🚪 Salir</button>
+</div>
+
+<!-- PANEL PEDIDOS ASESOR -->
+<div id="asesor-pedidos-panel" style="display:none;background:#0d0d1a;border-bottom:2px solid rgba(240,165,0,.2);padding:14px 16px;max-height:75vh;overflow-y:auto">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:var(--cp)">📋 Mis pedidos</div>
+    <button onclick="togglePanelPedidos()" style="background:none;border:none;color:var(--cmut);font-size:18px;cursor:pointer;padding:0">✕</button>
+  </div>
+  <div id="asesor-pedidos-lista"></div>
 </div>
 
 <!-- PANEL AVISOS -->
@@ -512,6 +529,15 @@ function hideMask(){
     <button onclick="togglePanelAvisos()" style="background:none;border:none;color:var(--cmut);font-size:18px;cursor:pointer;padding:0">✕</button>
   </div>
   <div id="avisos-mesa-lista"></div>
+</div>
+
+<!-- PANEL ALERTAS COCINA -->
+<div id="cocina-alertas-panel" style="display:none;background:#0d0d1a;border-bottom:2px solid rgba(251,146,60,.3);padding:14px 16px;max-height:50vh;overflow-y:auto">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:#fb923c">🍳 Alertas de Cocina</div>
+    <button onclick="toggleAlertasCocina()" style="background:none;border:none;color:var(--cmut);font-size:18px;cursor:pointer;padding:0">✕</button>
+  </div>
+  <div id="cocina-alertas-lista"></div>
 </div>
 
 <!-- TURNO CERRADO -->
@@ -1373,6 +1399,18 @@ function hideMask(){
 
       <!-- ORDERS -->
       <section class="asec" id="sec-orders">
+        <div id="cocina-alertas-caja" style="display:none;margin-bottom:12px"></div>
+
+        <!-- BUSCADOR DE MESA EN CAJA -->
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🔍 Buscar mesa / cobrar en caja</div>
+          <div style="display:flex;gap:8px">
+            <input class="fi" id="caja-busca-mesa" type="number" min="1" placeholder="Ej: 999" style="max-width:140px" onkeydown="if(event.key==='Enter')buscarMesaCaja()">
+            <button class="btn bp" style="border-radius:8px;white-space:nowrap" onclick="buscarMesaCaja()">🔍 Buscar mesa</button>
+          </div>
+          <div id="caja-mesa-resultado" style="margin-top:12px"></div>
+        </div>
+
         <div id="alerta-represados-caja" style="display:none;background:rgba(229,62,62,.1);color:#fc8181;border:1px solid rgba(229,62,62,.2);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
 
         <!-- TABLERO DE CAJA -->
@@ -1643,19 +1681,30 @@ function hideMask(){
 
       <!-- MESAS -->
       <section class="asec" id="sec-mesas">
-        <div class="asttl">🪑 Gestión de Mesas</div>
-        <div class="assub">Genera los links y códigos QR para cada mesa del restaurante.</div>
+        <div class="asttl" id="sec-mesas-ttl">🪑 Gestión de Lugares</div>
+        <div class="assub" id="sec-mesas-sub">Genera los links y códigos QR para cada puesto.</div>
         <div class="ac" style="max-width:520px">
-          <div class="acttl">⚙️ Configurar Mesas</div>
-          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px">
-            <div class="fg" style="flex:1;margin:0">
-              <label class="fl">Número de mesas</label>
-              <input class="fi" id="mesa-count" type="number" min="1" max="50" value="10" placeholder="10">
+          <div class="acttl">⚙️ Configurar</div>
+          <div class="frow" style="margin-bottom:12px">
+            <div class="fg">
+              <label class="fl">Nombre del lugar <span style="color:var(--cmut)">(Mesa, Silla, Puesto, Box, Stand...)</span></label>
+              <input class="fi" id="c-mesa-label" placeholder="Mesa" oninput="liveC()">
             </div>
-            <button class="btn bp" style="border-radius:10px;padding:10px 16px;white-space:nowrap" onclick="generarMesas()">🪑 Generar</button>
+            <div class="fg">
+              <label class="fl">Nombre del asesor <span style="color:var(--cmut)">(Asesor, Mesero, Vendedor, Staff...)</span></label>
+              <input class="fi" id="c-asesor-label" placeholder="Asesor" oninput="liveC()">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px">
+            <div class="fg" style="flex:1;margin:0">
+              <label class="fl" id="mesa-count-label">Cantidad a generar</label>
+              <input class="fi" id="mesa-count" type="number" min="1" value="10" placeholder="Sin límite">
+            </div>
+            <button class="btn bp" style="border-radius:10px;padding:10px 16px;white-space:nowrap" onclick="generarMesas()">Generar</button>
+            <button class="btn bo" style="border-radius:10px;padding:10px 16px;white-space:nowrap" onclick="descargarTodosQR()">📥 Descargar QR</button>
           </div>
           <div style="font-size:11px;color:var(--cmut);margin-bottom:16px">
-            💡 Copia el link de cada mesa y pégalo en tu etiqueta NFC o generador de QR
+            💡 Sin límite de cantidad. Copia el link y pégalo en tu etiqueta NFC o generador de QR.
           </div>
           <div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:10px;padding:12px;margin-bottom:16px">
             <div style="font-size:11px;font-weight:800;color:var(--cp);text-transform:uppercase;margin-bottom:6px">👨‍🍳 LINK PARA ASESORES</div>
@@ -2762,6 +2811,8 @@ function fillForm() {
   if (tcEl) tcEl.value = C.titlecolor || '#ffffff';
   sv('c-cattl',C.cattl); sv('c-cur',  C.cur);
   sv('c-wa', C.wa);
+  sv('c-mesa-label',   C.mesaLabel||'');
+  sv('c-asesor-label', C.asesorLabel||'');
   if(document.getElementById('c-pwa-activo')) document.getElementById('c-pwa-activo').checked=!!C.pwaActivo;
   sv('c-pwa-titulo', C.pwaTitulo||''); sv('c-pwa-sub', C.pwaSub||''); sv('c-pwa-ico', C.pwaIco||'');
   if(document.getElementById('c-pwa-bg')) document.getElementById('c-pwa-bg').value=C.pwaBg||'#f0a500';
@@ -2901,6 +2952,11 @@ function liveC() {
   var dirEl = document.getElementById('c-ctickgdir');
   if(dirEl) C.ctickgdir = dirEl.value;   C.cattl = g('c-cattl'); C.cur   = g('c-cur') || '$';
   C.wa    = g('c-wa');
+  C.mesaLabel   = g('c-mesa-label')   || 'Mesa';
+  C.asesorLabel = g('c-asesor-label') || 'Asesor';
+  // Actualizar label del count
+  var mcl = document.getElementById('mesa-count-label');
+  if (mcl) mcl.textContent = 'Cantidad de ' + (C.mesaLabel||'Mesa') + 's a generar';
   C.pwaActivo = !!(document.getElementById('c-pwa-activo')||{}).checked;
   C.pwaTitulo = g('c-pwa-titulo'); C.pwaSub = g('c-pwa-sub'); C.pwaIco = g('c-pwa-ico');
   C.pwaBg = g('c-pwa-bg')||'#f0a500'; C.pwaTxt = g('c-pwa-txt')||'#000000';
@@ -3622,7 +3678,7 @@ function copiarLinkAsesor(btn) {
 function generarMesas() {
   var n = parseInt(document.getElementById('mesa-count').value) || 10;
   if (n < 1) n = 1;
-  if (n > 50) n = 50;
+  if (n > 1000) n = 1000;
   var base = getBaseUrl();
   var html = '';
   for (var i = 1; i <= n; i++) {
@@ -3706,6 +3762,77 @@ function verQR(link, mesa) {
 
 function cerrarQR() {
   document.getElementById('m-qr').style.display = 'none';
+}
+
+function descargarTodosQR() {
+  var n = parseInt(document.getElementById('mesa-count').value) || 10;
+  if (n < 1) n = 1;
+  var label = C.mesaLabel || 'Mesa';
+  var negocio = C.name || 'Mi Negocio';
+  var base = getBaseUrl();
+
+  toast('⏳ Generando ' + n + ' QR... puede tomar unos segundos', 's');
+
+  // Cargar QRious si no está
+  function generarArchivo() {
+    var filas = [];
+    var porFila = 3; // 3 QR por fila al imprimir
+    var qrSize = 200;
+
+    // CSS de impresión
+    var css = [
+      '@page { size: A4; margin: 10mm; }',
+      'body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 0; }',
+      '.grid { display: grid; grid-template-columns: repeat(' + porFila + ', 1fr); gap: 8mm; padding: 5mm; }',
+      '.qr-item { text-align: center; border: 1px solid #ddd; border-radius: 8px; padding: 10px; page-break-inside: avoid; }',
+      '.qr-item h3 { margin: 0 0 6px; font-size: 14px; color: #1a1a2e; }',
+      '.qr-item p { margin: 4px 0 0; font-size: 10px; color: #666; word-break: break-all; }',
+      '.qr-item img { width: ' + qrSize + 'px; height: ' + qrSize + 'px; border-radius: 6px; }',
+      '@media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; } }'
+    ].join('\n');
+
+    var items = [];
+    for (var i = 1; i <= n; i++) {
+      var link = base + '?mesa=' + i;
+      var canvas = qrCanvas(link, qrSize);
+      var dataUrl = canvas.toDataURL('image/png');
+      items.push(
+        '<div class="qr-item">' +
+        '<h3>' + label + ' ' + i + '</h3>' +
+        '<img src="' + dataUrl + '" alt="QR ' + label + ' ' + i + '">' +
+        '<p>' + link + '</p>' +
+        '</div>'
+      );
+    }
+
+    var win = window.open('', '_blank');
+    if (!win) { toast('⚠️ Activa las ventanas emergentes', 'e'); return; }
+    win.document.write(
+      '<!DOCTYPE html><html><head>' +
+      '<meta charset="UTF-8">' +
+      '<title>QR ' + label + 's — ' + negocio + '</title>' +
+      '<style>' + css + '</style>' +
+      '</head><body>' +
+      '<div class="no-print" style="background:#1a1a2e;color:#f0a500;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Arial">' +
+        '<div><strong>' + negocio + '</strong> — ' + n + ' ' + label + (n>1?'s':'') + '</div>' +
+        '<button onclick="window.print()" style="background:#f0a500;color:#000;border:none;border-radius:6px;padding:8px 20px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Imprimir / Guardar PDF</button>' +
+      '</div>' +
+      '<div class="grid">' + items.join('') + '</div>' +
+      '</body></html>'
+    );
+    win.document.close();
+    toast('✅ ' + n + ' QR listos — toca "Imprimir" para guardar como PDF', 's');
+  }
+
+  if (window.QRious) {
+    generarArchivo();
+  } else {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js';
+    script.onload = generarArchivo;
+    script.onerror = function() { toast('⚠️ Sin conexión — no se puede generar QR', 'e'); };
+    document.head.appendChild(script);
+  }
 }
 
 function imprimirQR() {
@@ -4662,6 +4789,7 @@ function initExtras() {
   actualizarNavLogo();
   aplicarPWAFab();
   initBannerPub();
+  renderAlertasCocina();
 }
 
 
@@ -5684,6 +5812,164 @@ function renderCajaTablero() {
   }
 }
 
+// ── ALERTAS DE COCINA ──
+function alertaCocinaRapida(txt) {
+  var input = document.getElementById('cocina-alerta-txt');
+  if (input) input.value = txt;
+  enviarAlertaCocina();
+}
+
+function enviarAlertaCocina() {
+  var input = document.getElementById('cocina-alerta-txt');
+  var msg = input ? input.value.trim() : '';
+  if (!msg) { toast('⚠️ Escribe un mensaje', 'e'); return; }
+  if (!C.alertasCocina) C.alertasCocina = [];
+  var alerta = {
+    msg: msg,
+    autor: ASESOR_SESSION ? ASESOR_SESSION.nombre : 'Cocina',
+    ts: new Date().toLocaleString('es-CO'),
+    _ts: Date.now(),
+    leida: false
+  };
+  C.alertasCocina.unshift(alerta);
+  if (C.alertasCocina.length > 30) C.alertasCocina = C.alertasCocina.slice(0, 30);
+  saveSt();
+  if (input) input.value = '';
+  renderAlertasCocina();
+  toast('📢 Alerta enviada al mesero y caja', 's');
+}
+
+function renderAlertasCocina() {
+  var alertas = (C.alertasCocina || []).filter(function(a){ return Date.now()-a._ts < 14400000; }); // 4 horas
+  var noLeidas = alertas.filter(function(a){ return !a.leida; }).length;
+
+  // Badge en barra asesor
+  var badge = document.getElementById('cocina-alertas-badge');
+  if (badge) { if(noLeidas){badge.textContent=noLeidas;badge.style.display='flex';}else{badge.style.display='none';} }
+
+  // Panel del mesero
+  var lista = document.getElementById('cocina-alertas-lista');
+  if (lista) {
+    if (!alertas.length) { lista.innerHTML = '<div style="color:var(--cmut);font-size:13px">Sin alertas de cocina</div>'; }
+    else {
+      lista.innerHTML = alertas.map(function(a) {
+        var color = a.msg.indexOf('acabando') !== -1 || a.msg.indexOf('Acabando') !== -1 ? '#fb923c'
+          : a.msg.indexOf('no hay') !== -1 || a.msg.indexOf('No hay') !== -1 ? '#fc8181'
+          : a.msg.indexOf('Demora') !== -1 ? '#a5b4fc'
+          : '#68d391';
+        return '<div style="padding:10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:8px;border-left:3px solid '+color+'">' +
+          '<div style="font-size:13px;font-weight:600;color:'+color+'">'+a.msg+'</div>' +
+          '<div style="font-size:11px;color:var(--cmut);margin-top:3px">🍳 '+a.autor+' · '+a.ts+'</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+
+  // En caja del admin
+  var cajaBanner = document.getElementById('cocina-alertas-caja');
+  if (cajaBanner) {
+    var recientes = alertas.filter(function(a){ return !a.leida; });
+    if (recientes.length) {
+      cajaBanner.style.display = 'block';
+      cajaBanner.innerHTML = '<div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.25);border-radius:10px;padding:12px">' +
+        '<div style="font-size:12px;font-weight:700;color:#fb923c;margin-bottom:8px">🍳 ' + recientes.length + ' alerta' + (recientes.length>1?'s':'') + ' de cocina</div>' +
+        recientes.map(function(a){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+            '<span style="font-size:13px;font-weight:600;color:#fb923c">⚠️ '+a.msg+'</span>' +
+            '<span style="font-size:11px;color:var(--cmut)">'+a.ts+'</span></div>';
+        }).join('') +
+        '<button onclick="marcarAlertasCocinaLeidas()" style="margin-top:8px;background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">✓ Marcar como vistas</button>' +
+        '</div>';
+    } else {
+      cajaBanner.style.display = 'none';
+    }
+  }
+}
+
+function marcarAlertasCocinaLeidas() {
+  if (C.alertasCocina) C.alertasCocina.forEach(function(a){ a.leida = true; });
+  saveSt(); renderAlertasCocina();
+  toast('✓ Alertas marcadas como vistas', 's');
+}
+
+function toggleAlertasCocina() {
+  var panel = document.getElementById('cocina-alertas-panel');
+  if (!panel) return;
+  var visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible) {
+    renderAlertasCocina();
+  }
+}
+
+function buscarMesaCaja() {
+  var numMesa = document.getElementById('caja-busca-mesa').value.trim();
+  var resultado = document.getElementById('caja-mesa-resultado');
+  if (!resultado) return;
+  if (!numMesa) { resultado.innerHTML = '<div style="color:var(--cmut);font-size:13px">Ingresa un número de mesa</div>'; return; }
+
+  var pedidos = ORD.filter(function(o){
+    return o.mesa == numMesa && (o.status==='pending'||o.status==='ready'||o.status==='dispatched');
+  });
+
+  if (!pedidos.length) {
+    resultado.innerHTML = '<div style="background:rgba(229,62,62,.08);border:1px solid rgba(229,62,62,.2);border-radius:10px;padding:12px;color:#fc8181;font-size:13px">Sin pedidos activos en la Mesa ' + numMesa + '</div>';
+    return;
+  }
+
+  var total = pedidos.reduce(function(s,o){ return s+(o.total||0); }, 0);
+  var html = '<div style="background:rgba(56,161,105,.06);border:1px solid rgba(56,161,105,.2);border-radius:10px;padding:14px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<div style="font-size:15px;font-weight:700;color:#4ade80">🪑 Mesa ' + numMesa + '</div>';
+  html += '<div style="font-size:12px;color:var(--cmut)">' + pedidos.length + ' pedido' + (pedidos.length>1?'s':'') + '</div></div>';
+
+  // Desglose de items
+  var todosItems = {};
+  pedidos.forEach(function(o){
+    (o.items||[]).forEach(function(it){
+      var k = it.name;
+      if (!todosItems[k]) todosItems[k] = { qty:0, precio:it.price };
+      todosItems[k].qty += it.qty;
+    });
+  });
+
+  Object.keys(todosItems).forEach(function(nombre){
+    var it = todosItems[nombre];
+    html += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px">' +
+      '<span>' + nombre + ' <strong style="color:var(--cp)">x' + it.qty + '</strong></span>' +
+      '<span style="color:var(--cmut)">' + (C.cur||'$') + fmt(it.precio*it.qty) + '</span></div>';
+  });
+
+  html += '<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding-top:10px;margin-top:4px">';
+  html += '<span>TOTAL</span><span style="color:var(--cp)">' + (C.cur||'$') + fmt(total) + '</span></div>';
+
+  // Botones acción
+  html += '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">';
+  html += '<button onclick="cobrarMesaDesdeCaja(\''+numMesa+'\')" style="flex:1;background:#68d391;color:#000;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">✅ Cobrar todo — ' + (C.cur||'$') + fmt(total) + '</button>';
+  html += '<button onclick="verCuentaMesa(\''+numMesa+'\')" style="background:rgba(255,255,255,.07);color:var(--ctxt);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer">👁 Ver detalle</button>';
+  html += '</div></div>';
+
+  resultado.innerHTML = html;
+}
+
+function cobrarMesaDesdeCaja(numMesa) {
+  var pedidos = ORD.filter(function(o){
+    return o.mesa==numMesa && (o.status==='pending'||o.status==='ready'||o.status==='dispatched');
+  });
+  if (!pedidos.length) { toast('Sin pedidos activos en esta mesa', 'e'); return; }
+  var total = 0;
+  pedidos.forEach(function(o){
+    o.status = 'paid';
+    o.paidTs = new Date().toLocaleString('es-CO');
+    o.asesorCobro = ASESOR_SESSION ? ASESOR_SESSION.nombre : 'Caja';
+    total += o.total||0;
+  });
+  saveSt(); renderOrds(); renderCRM(); renderCajaTablero();
+  var resultado = document.getElementById('caja-mesa-resultado');
+  if (resultado) resultado.innerHTML = '<div style="background:rgba(56,161,105,.1);border:1px solid rgba(56,161,105,.3);border-radius:10px;padding:12px;color:#68d391;font-size:13px;font-weight:600">✅ Mesa ' + numMesa + ' cobrada — ' + (C.cur||'$') + fmt(total) + '</div>';
+  toast('✅ Mesa ' + numMesa + ' cobrada — ' + (C.cur||'$') + fmt(total), 's');
+}
+
 function renderPts() {
   var c = document.getElementById('pts');
   for (var i = 0; i < 10; i++) {
@@ -5719,13 +6005,6 @@ function renderPts() {
   <div id="avisos-mesa-lista"></div>
 </div>
 
-<div id="asesor-pedidos-panel" style="display:none;background:#0d0d1a;border-bottom:2px solid rgba(240,165,0,.2);padding:14px 16px;max-height:70vh;overflow-y:auto">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div style="font-size:13px;font-weight:700;color:var(--cp)">📋 Mis pedidos</div>
-    <button onclick="togglePanelPedidos()" style="background:none;border:none;color:var(--cmut);font-size:18px;cursor:pointer">✕</button>
-  </div>
-  <div id="asesor-pedidos-lista"></div>
-</div>
 
 <!-- PANEL COCINA -->
 <div id="cocina-panel" style="display:none;background:#07070f;min-height:100vh;padding:16px">
@@ -5733,6 +6012,22 @@ function renderPts() {
     <div style="font-size:18px;font-weight:700;color:var(--cp)">🍳 Panel Cocina</div>
     <button onclick="cerrarSesionAsesor()" style="background:rgba(229,62,62,.1);color:#fc8181;border:1px solid rgba(229,62,62,.3);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">🚪 Salir</button>
   </div>
+
+  <!-- ALERTA DE INGREDIENTES / OBSERVACIONES -->
+  <div style="background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.2);border-radius:12px;padding:14px;margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">⚠️ Enviar alerta al mesero y caja</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button onclick="alertaCocinaRapida('Se está acabando')" style="background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.3);border-radius:50px;padding:5px 12px;font-size:12px;cursor:pointer">⚠️ Se está acabando</button>
+      <button onclick="alertaCocinaRapida('Ya no hay')" style="background:rgba(229,62,62,.1);color:#fc8181;border:1px solid rgba(229,62,62,.3);border-radius:50px;padding:5px 12px;font-size:12px;cursor:pointer">🚫 Ya no hay</button>
+      <button onclick="alertaCocinaRapida('Demora extra')" style="background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:50px;padding:5px 12px;font-size:12px;cursor:pointer">⏳ Demora extra</button>
+      <button onclick="alertaCocinaRapida('Listo para recoger')" style="background:rgba(56,161,105,.1);color:#68d391;border:1px solid rgba(56,161,105,.3);border-radius:50px;padding:5px 12px;font-size:12px;cursor:pointer">✅ Listo para recoger</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input id="cocina-alerta-txt" class="fi" placeholder="Ej: Se acabó la cebolla, sin jugo de mango..." style="flex:1;font-size:13px">
+      <button onclick="enviarAlertaCocina()" style="background:var(--cp);color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Enviar 📢</button>
+    </div>
+  </div>
+
   <div id="cocina-lista"></div>
 </div>
 
@@ -5786,4 +6081,3 @@ function renderPts() {
 
 </body>
 </html>
-
