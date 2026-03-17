@@ -413,7 +413,6 @@ function hideMask(){
   <div class="hact" style="display:none">
   </div>
   <div class="hact">
-    <button id="pwa-install-btn" onclick="instalarPWA()" style="display:none;align-items:center;gap:6px;padding:7px 13px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--chtxt);transition:background .2s"><span id="pwa-btn-ico">📲</span><span id="pwa-btn-label">Instalar App</span></button>
     <button id="admbtn" onclick="openLogin()">&#9881;&#65039; Admin</button>
     <div id="cart-fab" onclick="openCart()">&#128722;<span id="cart-n" class="hidden">0</span></div>
   </div>
@@ -439,6 +438,36 @@ function hideMask(){
 
 <div id="ticker-wrap"><div id="ticker-tr"></div></div>
 <!-- Banner de mesa activa -->
+
+<!-- BARRA PWA -->
+<div id="pwa-install-btn" style="display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--chdr,#0d0d1a);border-bottom:1px solid rgba(255,255,255,.08)">
+  <div style="display:flex;align-items:center;gap:10px;flex:1">
+    <span id="pwa-btn-ico" style="font-size:20px;flex-shrink:0">📲</span>
+    <div style="display:flex;flex-direction:column;line-height:1.3">
+      <span id="pwa-btn-label" style="font-size:13px;font-weight:600;color:var(--chtxt,#f0f0ff)">Instalar App</span>
+      <span id="pwa-btn-sub" style="font-size:11px;color:var(--cmut,#8888aa)">Gratis · Funciona sin internet</span>
+    </div>
+  </div>
+  <button onclick="instalarPWA()" id="pwa-install-action" style="padding:7px 16px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--chtxt,#f0f0ff);white-space:nowrap;transition:background .2s">Instalar</button>
+  <button onclick="ocultarFabPWA()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);border:none;color:var(--cmut,#8888aa);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s">✕</button>
+</div>
+
+
+<!-- BANNER PUBLICITARIO -->
+<div id="banner-pub" style="display:none;cursor:pointer;transition:opacity .2s" onclick="abrirBannerPub()">
+  <div id="banner-pub-inner" style="display:flex;align-items:center;gap:10px;padding:10px 16px;position:relative">
+    <div id="banner-pub-img-wrap" style="width:36px;height:36px;border-radius:8px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1)">
+      <span id="banner-pub-ico" style="font-size:20px">📢</span>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div id="banner-pub-titulo" style="font-size:13px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Pauta aquí tu negocio</div>
+      <div id="banner-pub-sub" style="font-size:11px;opacity:.75;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Llega a más clientes</div>
+    </div>
+    <div id="banner-pub-cta" style="padding:5px 12px;border-radius:50px;font-size:12px;font-weight:600;flex-shrink:0;white-space:nowrap">Ver más →</div>
+    <button id="banner-pub-close" onclick="event.stopPropagation();cerrarBannerPub()" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.2);border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:inherit;transition:background .2s">✕</button>
+  </div>
+</div>
+
 <div id="mesa-banner" style="display:none;background:linear-gradient(90deg,#16a34a,#059669);color:#fff;text-align:center;padding:10px 16px;font-weight:700;font-size:15px;letter-spacing:.03em">
   🪑 Estás en la <span id="mesa-banner-num"></span> — Haz tu pedido y lo atendemos
   <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap">
@@ -1454,6 +1483,72 @@ function hideMask(){
               <input type="hidden" id="asesor-edit-idx" value="">
             </div>
             <div id="asesores-list" class="apl"></div>
+          </div>
+
+          <!-- MONETIZACIÓN — BANNER PUBLICITARIO -->
+          <div class="ac" style="margin-bottom:16px">
+            <div class="acttl">💰 Monetización — Banner Publicitario</div>
+            <div style="font-size:13px;color:var(--cmut);margin-bottom:14px">Vende este espacio a un anunciante. Aparece debajo del header visible para todos los clientes.</div>
+
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:16px">
+              <input type="checkbox" id="c-pub-activo" style="accent-color:var(--cp);width:16px;height:16px" onchange="aplicarBannerPub()"> Activar banner publicitario
+            </label>
+
+            <div class="agrid" style="margin-bottom:16px">
+              <div class="fg"><label class="fl">Texto principal</label><input class="fi" id="c-pub-titulo" placeholder="Ej: Pinturas El Color" oninput="aplicarBannerPub()"></div>
+              <div class="fg"><label class="fl">Subtexto</label><input class="fi" id="c-pub-sub" placeholder="Ej: 20% dcto en pinturas hoy" oninput="aplicarBannerPub()"></div>
+              <div class="fg"><label class="fl">URL destino</label><input class="fi" id="c-pub-url" placeholder="https://..." oninput="aplicarBannerPub()"></div>
+              <div class="fg"><label class="fl">Ícono / Emoji</label><input class="fi" id="c-pub-ico" placeholder="🎨" maxlength="4" oninput="aplicarBannerPub()" style="max-width:90px"></div>
+            </div>
+
+            <div class="fg" style="margin-bottom:12px">
+              <label class="fl">Imagen del anunciante (logo)</label>
+              <div class="upwrap">
+                <input class="fi" id="c-pub-img-url" placeholder="URL de imagen o sube">
+                <label class="upbtn">📷 Subir<input type="file" accept="image/*" style="display:none" onchange="upBannerPubImg(event)"></label>
+              </div>
+              <img id="prev-pub-img" style="width:60px;height:60px;border-radius:8px;margin-top:8px;display:none;object-fit:cover" src="" alt="">
+            </div>
+
+            <div class="frow" style="margin-bottom:12px">
+              <div class="fg"><label class="fl">Color de fondo</label><div class="csw"><input type="color" id="c-pub-bg" value="#1a1a2e" oninput="aplicarBannerPub();updHex()"><span id="c-pub-bgh">#1a1a2e</span></div></div>
+              <div class="fg"><label class="fl">Color del texto</label><div class="csw"><input type="color" id="c-pub-txt" value="#f0f0ff" oninput="aplicarBannerPub();updHex()"><span id="c-pub-txth">#f0f0ff</span></div></div>
+              <div class="fg"><label class="fl">Color del botón CTA</label><div class="csw"><input type="color" id="c-pub-cta-bg" value="#f0a500" oninput="aplicarBannerPub();updHex()"><span id="c-pub-cta-bgh">#f0a500</span></div></div>
+            </div>
+
+            <div class="fg" style="margin-bottom:12px">
+              <label class="fl">Tamaño del banner</label>
+              <select class="fi" id="c-pub-size" onchange="aplicarBannerPub()" style="max-width:240px">
+                <option value="sm">Pequeño — solo una línea</option>
+                <option value="md" selected>Mediano — título y subtexto</option>
+                <option value="lg">Grande — con imagen destacada</option>
+              </select>
+            </div>
+
+            <div class="fg" style="margin-bottom:12px">
+              <label class="fl">Estilo del borde</label>
+              <select class="fi" id="c-pub-borde" onchange="aplicarBannerPub()" style="max-width:240px">
+                <option value="none">Sin borde</option>
+                <option value="bottom">Línea inferior</option>
+                <option value="full">Borde completo</option>
+                <option value="left">Acento izquierdo</option>
+              </select>
+            </div>
+
+            <div style="font-size:11px;font-weight:800;color:var(--cp);margin-bottom:8px">🎨 Estilos rápidos</div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px">
+              <button class="btn bsm" style="background:#1a1a2e;color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:8px" onclick="setEstiloPub('#1a1a2e','#f0f0ff','#f0a500')">🌌 Dark dorado</button>
+              <button class="btn bsm" style="background:#fff;color:#111;border:1px solid #ddd;border-radius:8px" onclick="setEstiloPub('#ffffff','#111111','#e53e3e')">⬜ Blanco</button>
+              <button class="btn bsm" style="background:#276749;color:#fff;border-radius:8px" onclick="setEstiloPub('#276749','#ffffff','#68d391')">🌿 Verde</button>
+              <button class="btn bsm" style="background:#e53e3e;color:#fff;border-radius:8px" onclick="setEstiloPub('#e53e3e','#ffffff','#fff')">❤️ Rojo</button>
+              <button class="btn bsm" style="background:#805ad5;color:#fff;border-radius:8px" onclick="setEstiloPub('#805ad5','#ffffff','#e9d8fd')">💜 Morado</button>
+              <button class="btn bsm" style="background:#f0a500;color:#000;border-radius:8px" onclick="setEstiloPub('#f0a500','#000000','#1a1a2e')">🟡 Dorado</button>
+            </div>
+
+            <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.07)">
+              <div style="font-size:11px;color:var(--cmut);margin-bottom:8px">Vista previa:</div>
+              <div id="pub-preview"></div>
+            </div>
           </div>
           <!-- Cambiar PIN CRM -->
           <div class="ac" style="max-width:380px">
@@ -4514,6 +4609,7 @@ function initExtras() {
   renderAvisosMesa();
   actualizarNavLogo();
   aplicarPWAFab();
+  initBannerPub();
 }
 
 
@@ -5114,6 +5210,34 @@ function actualizarNavLogo() {
 function aplicarPWAFab() {
   var btn = document.getElementById('pwa-install-btn');
   if (!btn) return;
+  var bg  = C.pwaBg  || '';
+  var txt = C.pwaTxt || '';
+  var ico = C.pwaIco || '📲';
+  var titulo = C.pwaTitulo || 'Instalar App';
+  var sub = C.pwaSub || 'Gratis · Funciona sin internet';
+  // Actualizar contenido
+  var icoEl = document.getElementById('pwa-btn-ico');
+  var lblEl = document.getElementById('pwa-btn-label');
+  var subEl = document.getElementById('pwa-btn-sub');
+  var actBtn = document.getElementById('pwa-install-action');
+  if (icoEl) icoEl.textContent = ico;
+  if (lblEl) { lblEl.textContent = titulo; if(txt) lblEl.style.color = txt; }
+  if (subEl) subEl.textContent = sub;
+  // Estilo del botón de acción
+  if (actBtn && bg) {
+    actBtn.style.background = bg;
+    actBtn.style.border = 'none';
+    actBtn.style.color = txt || '#000';
+  }
+  // Mostrar u ocultar
+  if (C.pwaActivo) {
+    btn.style.display = 'flex';
+  } else {
+    btn.style.display = 'none';
+  }
+  renderPWAPreview();
+  return; // fin
+  if (!btn) return;
   var bg  = C.pwaBg  || '#f0a500';
   var txt = C.pwaTxt || '#000000';
   var ico = C.pwaIco || '📲';
@@ -5205,6 +5329,147 @@ function renderPWAPreview() {
     '<span style="font-size:12px;font-weight:600;color:' + txt + '">' + titulo + '</span>' +
     '<span style="font-size:10px;color:' + txt + ';opacity:.75">' + sub + '</span>' +
     '</div></div>';
+}
+
+// ── BANNER PUBLICITARIO ──
+function aplicarBannerPub() {
+  var banner = document.getElementById('banner-pub');
+  if (!banner) return;
+  var activo = document.getElementById('c-pub-activo');
+  if (!activo || !activo.checked) { banner.style.display = 'none'; renderPubPreview(); return; }
+
+  var titulo  = (document.getElementById('c-pub-titulo')||{}).value || 'Pauta aquí tu negocio';
+  var sub     = (document.getElementById('c-pub-sub')||{}).value || 'Llega a más clientes';
+  var bg      = (document.getElementById('c-pub-bg')||{}).value || '#1a1a2e';
+  var txt     = (document.getElementById('c-pub-txt')||{}).value || '#f0f0ff';
+  var ctaBg   = (document.getElementById('c-pub-cta-bg')||{}).value || '#f0a500';
+  var ico     = (document.getElementById('c-pub-ico')||{}).value || '📢';
+  var size    = ((document.getElementById('c-pub-size')||{}).value) || 'md';
+  var borde   = ((document.getElementById('c-pub-borde')||{}).value) || 'none';
+  var img     = C.pubImg || '';
+
+  // Aplicar al banner
+  var inner = document.getElementById('banner-pub-inner');
+  var tituloEl = document.getElementById('banner-pub-titulo');
+  var subEl    = document.getElementById('banner-pub-sub');
+  var icoEl    = document.getElementById('banner-pub-ico');
+  var imgWrap  = document.getElementById('banner-pub-img-wrap');
+  var ctaEl    = document.getElementById('banner-pub-cta');
+
+  if (tituloEl) tituloEl.textContent = titulo;
+  if (subEl)    { subEl.textContent = sub; subEl.style.display = size === 'sm' ? 'none' : ''; }
+  if (ctaEl)    { ctaEl.style.background = ctaBg; ctaEl.style.color = txt === '#ffffff' || txt === '#f0f0ff' ? '#000' : '#fff'; }
+
+  // Ícono o imagen
+  if (img && imgWrap) {
+    imgWrap.innerHTML = '<img src="'+img+'" style="width:100%;height:100%;object-fit:cover">';
+    imgWrap.style.display = size === 'sm' ? 'none' : 'flex';
+  } else if (icoEl) {
+    icoEl.textContent = ico;
+    if (imgWrap) imgWrap.style.display = size === 'sm' ? 'none' : 'flex';
+  }
+
+  // Tamaño
+  var padding = size === 'sm' ? '7px 16px' : size === 'lg' ? '14px 16px' : '10px 16px';
+  if (inner) inner.style.padding = padding;
+
+  // Color fondo y texto
+  banner.style.background = bg;
+  banner.style.color = txt;
+  if (tituloEl) tituloEl.style.color = txt;
+  if (subEl)    subEl.style.color = txt;
+
+  // Borde
+  banner.style.border = '';
+  banner.style.borderBottom = '';
+  banner.style.borderLeft = '';
+  if (borde === 'bottom')  { banner.style.borderBottom = '2px solid ' + ctaBg; }
+  else if (borde === 'full') { banner.style.border = '1px solid ' + ctaBg; }
+  else if (borde === 'left') { banner.style.borderLeft = '4px solid ' + ctaBg; }
+
+  banner.style.display = 'block';
+  // Guardar en C
+  C.pubActivo = true;
+  C.pubTitulo = titulo; C.pubSub = sub; C.pubBg = bg; C.pubTxt = txt;
+  C.pubCtaBg = ctaBg; C.pubIco = ico; C.pubSize = size; C.pubBorde = borde;
+  renderPubPreview();
+}
+
+function abrirBannerPub() {
+  var url = C.pubUrl || (document.getElementById('c-pub-url')||{}).value || '';
+  if (url) { window.open(url, '_blank'); }
+}
+
+function cerrarBannerPub() {
+  var banner = document.getElementById('banner-pub');
+  if (banner) banner.style.display = 'none';
+}
+
+function upBannerPubImg(ev) {
+  var file = ev.target.files[0]; if (!file) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    C.pubImg = e.target.result;
+    var prev = document.getElementById('prev-pub-img');
+    if (prev) { prev.src = C.pubImg; prev.style.display = 'block'; }
+    aplicarBannerPub();
+  };
+  r.readAsDataURL(file);
+}
+
+function setEstiloPub(bg, txt, ctaBg) {
+  var bgEl  = document.getElementById('c-pub-bg');
+  var txtEl = document.getElementById('c-pub-txt');
+  var ctaEl = document.getElementById('c-pub-cta-bg');
+  if (bgEl)  bgEl.value  = bg;
+  if (txtEl) txtEl.value = txt;
+  if (ctaEl) ctaEl.value = ctaBg;
+  aplicarBannerPub();
+}
+
+function renderPubPreview() {
+  var prev = document.getElementById('pub-preview');
+  if (!prev) return;
+  var activo = document.getElementById('c-pub-activo');
+  if (!activo || !activo.checked) { prev.innerHTML = '<div style="font-size:12px;color:var(--cmut)">Banner inactivo</div>'; return; }
+  var titulo = (document.getElementById('c-pub-titulo')||{}).value || 'Pauta aquí tu negocio';
+  var sub    = (document.getElementById('c-pub-sub')||{}).value || 'Llega a más clientes';
+  var bg     = (document.getElementById('c-pub-bg')||{}).value || '#1a1a2e';
+  var txt    = (document.getElementById('c-pub-txt')||{}).value || '#f0f0ff';
+  var ctaBg  = (document.getElementById('c-pub-cta-bg')||{}).value || '#f0a500';
+  var ico    = (document.getElementById('c-pub-ico')||{}).value || '📢';
+  var size   = ((document.getElementById('c-pub-size')||{}).value) || 'md';
+  var pad    = size === 'sm' ? '7px 12px' : '10px 12px';
+  prev.innerHTML = '<div style="background:'+bg+';color:'+txt+';border-radius:8px;padding:'+pad+';display:flex;align-items:center;gap:8px">' +
+    (size !== 'sm' ? '<span style="font-size:18px">'+ico+'</span>' : '') +
+    '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:'+txt+'">'+titulo+'</div>' +
+    (size !== 'sm' ? '<div style="font-size:10px;color:'+txt+';opacity:.75">'+sub+'</div>' : '') +
+    '</div><div style="background:'+ctaBg+';border-radius:50px;padding:4px 10px;font-size:11px;font-weight:600;color:#000">Ver →</div></div>';
+}
+
+function initBannerPub() {
+  if (!C.pubActivo) return;
+  // Restaurar campos
+  var fields = {
+    'c-pub-titulo': C.pubTitulo, 'c-pub-sub': C.pubSub,
+    'c-pub-url': C.pubUrl, 'c-pub-ico': C.pubIco,
+    'c-pub-bg': C.pubBg, 'c-pub-txt': C.pubTxt, 'c-pub-cta-bg': C.pubCtaBg
+  };
+  Object.keys(fields).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && fields[id]) el.value = fields[id];
+  });
+  var chk = document.getElementById('c-pub-activo');
+  if (chk) chk.checked = true;
+  var sizeEl = document.getElementById('c-pub-size');
+  if (sizeEl && C.pubSize) sizeEl.value = C.pubSize;
+  var bordeEl = document.getElementById('c-pub-borde');
+  if (bordeEl && C.pubBorde) bordeEl.value = C.pubBorde;
+  if (C.pubImg) {
+    var prev = document.getElementById('prev-pub-img');
+    if (prev) { prev.src = C.pubImg; prev.style.display = 'block'; }
+  }
+  aplicarBannerPub();
 }
 
 function renderPts() {
