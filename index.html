@@ -1534,7 +1534,7 @@ function hideMask(){
           <!-- Celebración -->
           <div class="ac" style="margin-bottom:16px">
             <div class="acttl">🎊 Modo Celebración</div>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px"><input type="checkbox" id="c-celebracion" style="width:16px;height:16px;accent-color:var(--cp)" onchange="saveCelebConfig()"> Activar al confirmar pedido</label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:12px"><input type="checkbox" id="c-celebracion" checked style="width:16px;height:16px;accent-color:var(--cp)" onchange="saveCelebConfig()"> Activar al confirmar pedido</label>
             <div class="fg"><label class="fl">Tipo</label><select class="fi" id="c-celebracion-tipo" onchange="saveCelebConfig()" style="max-width:280px"><option value="confeti">🎊 Confeti</option><option value="fuegos">🎆 Fuegos</option><option value="emojis">😊 Emojis</option></select></div>
             <div class="fg"><label class="fl">Mensaje</label><input class="fi" id="c-celebracion-msg" placeholder="¡Gracias! Tu pedido está en camino 🔥" oninput="saveCelebConfig()"></div>
           </div>
@@ -2703,7 +2703,7 @@ function placeOrd() {
     }
   }
 
-  var toastMsg = (esMesa || esAsesorMode) ? '🍽️ ¡Pedido enviado a caja!' : '🎉 ¡Pedido creado y enviado a WhatsApp!';
+  var toastMsg = (esMesa || esAsesorMode) ? '🍽️ ¡Pedido enviado a caja!' : '🎉 ¡Pedido creado!';
   closeM('m-chk');
   document.getElementById('m-ok').classList.remove('hidden');
   CART = []; updCartN(); renderCat();
@@ -2711,6 +2711,23 @@ function placeOrd() {
   var payEl = document.getElementById('cn-pay'); if(payEl) payEl.value = '';
   var mesaSelEl = document.getElementById('asesor-mesa-sel'); if(mesaSelEl) mesaSelEl.value = '';
   toast(toastMsg,'s');
+
+  // Celebración y pago digital
+  setTimeout(function(){
+    lanzarCelebracion();
+    if (!esAsesorMode && !esMesa) {
+      // Domicilio — mostrar ticket de pago si eligió método digital
+      var payVal = o.pay || '';
+      var esDigital = payVal && payVal !== '💵 Efectivo — contra entrega' && payVal !== '💳 Tarjeta' && payVal.indexOf('Efectivo') === -1 && payVal.indexOf('Tarjeta') === -1;
+      if (esDigital || tienePagoDigital()) {
+        setTimeout(function(){ mostrarPagoDigital(o, false); }, 800);
+      } else {
+        setTimeout(mostrarCalificacion, 2500);
+      }
+    } else if (!esAsesorMode) {
+      setTimeout(mostrarCalificacion, 2500);
+    }
+  }, 300);
 }
 
 // ============================================================
@@ -4688,7 +4705,8 @@ function enviarCalificacion() {
 // CELEBRACIÓN
 // ============================================================
 function lanzarCelebracion() {
-  if(!C.celebracionActiva) return;
+  // Activo por defecto — solo se desactiva si el dueño lo apagó explícitamente
+  if(C.celebracionActiva === false) return;
   var panel=document.getElementById('m-celebracion');
   if(!panel) return;
   var msgEl=document.getElementById('celebracion-msg');
@@ -4699,33 +4717,56 @@ function lanzarCelebracion() {
     canvas.width=window.innerWidth; canvas.height=window.innerHeight;
     var ctx=canvas.getContext('2d');
     var tipo=C.celebracionTipo||'confeti';
-    var cols=['#f0a500','#ff6b00','#68d391','#63b3ed','#fc8181','#fff'];
+    var cols=['#f0a500','#ff6b00','#68d391','#63b3ed','#fc8181','#fff','#f9cb42'];
     var emjs=tipo==='emojis'?['🎉','⭐','🔥','😊','👏','🎊']:null;
     var parts=[];
-    for(var i=0;i<120;i++){
-      parts.push({x:Math.random()*canvas.width,y:Math.random()*-canvas.height,vx:(Math.random()-.5)*4,vy:Math.random()*5+2,color:cols[Math.floor(Math.random()*cols.length)],emoji:emjs?emjs[Math.floor(Math.random()*emjs.length)]:null,size:Math.random()*10+5,rot:Math.random()*360});
+    for(var i=0;i<150;i++){
+      parts.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*-canvas.height,
+        vx:(Math.random()-.5)*5,
+        vy:Math.random()*6+3,
+        color:cols[Math.floor(Math.random()*cols.length)],
+        emoji:emjs?emjs[Math.floor(Math.random()*emjs.length)]:null,
+        size:Math.random()*12+4,
+        rot:Math.random()*360
+      });
     }
     var frames=0;
     function animar(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      parts.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.rot+=3;
-        if(p.emoji){ctx.font=p.size*2+'px serif';ctx.fillText(p.emoji,p.x,p.y);}
-        else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size/2);ctx.restore();}
+      parts.forEach(function(p){
+        p.x+=p.vx; p.y+=p.vy; p.rot+=4;
+        if(p.emoji){
+          ctx.font=p.size*2+'px serif';
+          ctx.fillText(p.emoji,p.x,p.y);
+        } else {
+          ctx.save();
+          ctx.translate(p.x,p.y);
+          ctx.rotate(p.rot*Math.PI/180);
+          ctx.fillStyle=p.color;
+          ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);
+          ctx.restore();
+        }
       });
       frames++;
-      if(frames<120) requestAnimationFrame(animar);
-      else{ctx.clearRect(0,0,canvas.width,canvas.height);setTimeout(function(){panel.style.display='none';},500);}
+      if(frames<180) requestAnimationFrame(animar);
+      else{
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        setTimeout(function(){panel.style.display='none';},300);
+      }
     }
     animar();
   }
-  setTimeout(function(){panel.style.display='none';},4000);
+  setTimeout(function(){panel.style.display='none';},5000);
 }
 
 function saveCelebConfig() {
   var chk=document.getElementById('c-celebracion');
   var tipo=document.getElementById('c-celebracion-tipo');
   var msg=document.getElementById('c-celebracion-msg');
-  if(chk) C.celebracionActiva=chk.checked;
+  // Guardar false explícitamente cuando está desmarcado
+  C.celebracionActiva = chk ? chk.checked : true;
   if(tipo) C.celebracionTipo=tipo.value;
   if(msg) C.celebracionMsg=msg.value;
   saveSt();
@@ -5010,23 +5051,103 @@ function abrirEdicionPedido(oid) {
   for (var i = 0; i < ORD.length; i++) { if (ORD[i].id === oid) { o = ORD[i]; break; } }
   if (!o) return;
   window._editOid = oid;
-  var html = '<div style="font-size:12px;color:var(--cmut);margin-bottom:14px">Pedido <strong style="color:var(--cp)">' + o.id + '</strong> · ' + o.name + (o.mesa ? ' · Mesa ' + o.mesa : '') + '</div>';
+  renderEdicionPedido(oid);
+  document.getElementById('m-edit-ord').classList.remove('hidden');
+}
+
+function renderEdicionPedido(oid) {
+  var o = null;
+  for (var i = 0; i < ORD.length; i++) { if (ORD[i].id === oid) { o = ORD[i]; break; } }
+  if (!o) return;
+
+  var label = C.mesaLabel || 'Mesa';
+  var html = '';
+
+  // Cabecera
+  html += '<div style="font-size:12px;color:var(--cmut);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)">' +
+    '📋 <strong style="color:var(--cp)">' + o.id + '</strong> · ' + o.name +
+    (o.mesa ? ' · ' + label + ' ' + o.mesa : '') + '</div>';
+
+  // Nota general del pedido
+  html += '<div style="margin-bottom:14px">' +
+    '<div style="font-size:11px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">📝 Nota del pedido</div>' +
+    '<input class="fi" id="edit-nota-pedido" placeholder="Ej: cliente alérgico al maní, pedir bien cocido..." value="' + (o.notes||'').replace(/"/g,'&quot;') + '" style="font-size:13px">' +
+    '</div>';
+
+  // Productos actuales
+  html += '<div style="font-size:11px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🛒 Productos en el pedido</div>';
+
   for (var j = 0; j < o.items.length; j++) {
     var it = o.items[j];
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
-      '<div style="flex:1"><div style="font-size:14px;font-weight:600">' + it.name + '</div>' +
-      '<div style="font-size:12px;color:var(--cmut)">' + (C.cur||'$') + (it.price).toLocaleString('es-CO') + ' c/u</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-        '<button onclick="editOrdQty(\''+oid+'\','+j+',-1)" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--ctxt);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>' +
-        '<span id="edit-qty-'+j+'" style="font-weight:700;min-width:20px;text-align:center">' + it.qty + '</span>' +
-        '<button onclick="editOrdQty(\''+oid+'\','+j+',1)" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--ctxt);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>' +
-        '<button onclick="editOrdDel(\''+oid+'\','+j+')" style="width:28px;height:28px;border-radius:50%;background:rgba(229,62,62,.1);border:none;color:#fc8181;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">🗑</button>' +
-      '</div></div>';
+    html += '<div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,.06)">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:14px;font-weight:600">' + it.name + '</div>' +
+          '<div style="font-size:12px;color:var(--cmut)">' + (C.cur||'$') + fmt(it.price) + ' c/u</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<button onclick="editOrdQty(\''+oid+'\','+j+',-1)" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--ctxt);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>' +
+          '<span id="edit-qty-'+j+'" style="font-weight:700;min-width:24px;text-align:center;font-size:16px">' + it.qty + '</span>' +
+          '<button onclick="editOrdQty(\''+oid+'\','+j+',1)" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--ctxt);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>' +
+          '<button onclick="editOrdDel(\''+oid+'\','+j+')" style="width:30px;height:30px;border-radius:50%;background:rgba(229,62,62,.1);border:none;color:#fc8181;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">🗑</button>' +
+        '</div>' +
+      '</div>' +
+      '<input class="fi" id="edit-nota-'+j+'" placeholder="Nota: sin cebolla, bien cocido..." value="' + (it.notas||'').replace(/"/g,'&quot;') + '" style="font-size:12px;padding:6px 10px">' +
+    '</div>';
   }
+
+  // Total actual
   var total = o.items.reduce(function(s,it){ return s + it.price * it.qty; }, 0);
-  html += '<div style="display:flex;justify-content:space-between;font-weight:700;padding-top:12px;margin-top:4px"><span>Total</span><span style="color:var(--cp)">' + (C.cur||'$') + total.toLocaleString('es-CO') + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);margin-bottom:14px">' +
+    '<span>Subtotal</span><span id="edit-total" style="color:var(--cp)">' + (C.cur||'$') + fmt(total) + '</span></div>';
+
+  // Agregar productos nuevos
+  html += '<div style="font-size:11px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">➕ Agregar producto</div>';
+  html += '<input class="fi" id="edit-busca-prod" placeholder="Buscar producto..." oninput="filtrarProdsEdicion(\''+oid+'\')" style="font-size:13px;margin-bottom:8px">';
+  html += '<div id="edit-prods-lista" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto">';
+
+  // Mostrar todos los productos del catálogo
+  for (var k = 0; k < P.length; k++) {
+    var p = P[k];
+    if (p.agotado) continue;
+    html += '<div class="edit-prod-item" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.06)">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + p.name + '</div>' +
+        '<div style="font-size:11px;color:var(--cmut)">' + (C.cur||'$') + fmt(p.price) + '</div>' +
+      '</div>' +
+      '<button onclick="agregarProdPedido(\''+oid+'\',\''+k+'\')" style="background:var(--cp);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">+ Agregar</button>' +
+    '</div>';
+  }
+  html += '</div>';
+
   document.getElementById('edit-ord-body').innerHTML = html;
-  document.getElementById('m-edit-ord').classList.remove('hidden');
+}
+
+function filtrarProdsEdicion(oid) {
+  var q = (document.getElementById('edit-busca-prod').value||'').toLowerCase();
+  var items = document.querySelectorAll('.edit-prod-item');
+  items.forEach(function(el) {
+    var nombre = el.querySelector('div div').textContent.toLowerCase();
+    el.style.display = nombre.indexOf(q) !== -1 ? '' : 'none';
+  });
+}
+
+function agregarProdPedido(oid, pidx) {
+  var o = null;
+  for (var i = 0; i < ORD.length; i++) { if (ORD[i].id === oid) { o = ORD[i]; break; } }
+  var p = P[parseInt(pidx)];
+  if (!o || !p) return;
+  // Si ya existe en el pedido sumar cantidad
+  var existe = false;
+  for (var j = 0; j < o.items.length; j++) {
+    if (o.items[j].id === p.id) { o.items[j].qty++; existe = true; break; }
+  }
+  if (!existe) {
+    o.items.push({ id:p.id, name:p.name, price:p.price, qty:1, img:p.img, emoji:p.emoji, notas:'' });
+  }
+  o.total = o.items.reduce(function(s,it){ return s+it.price*it.qty; }, 0);
+  toast('✅ ' + p.name + ' agregado', 's');
+  renderEdicionPedido(oid);
 }
 
 function editOrdQty(oid, idx, delta) {
@@ -5037,9 +5158,9 @@ function editOrdQty(oid, idx, delta) {
   if (o.items[idx].qty < 1) o.items[idx].qty = 1;
   var el = document.getElementById('edit-qty-' + idx);
   if (el) el.textContent = o.items[idx].qty;
-  // Actualizar total en pantalla
-  var total = o.items.reduce(function(s,it){ return s + it.price * it.qty; }, 0);
-  o.total = total;
+  o.total = o.items.reduce(function(s,it){ return s+it.price*it.qty; }, 0);
+  var tot = document.getElementById('edit-total');
+  if (tot) tot.textContent = (C.cur||'$') + fmt(o.total);
 }
 
 function editOrdDel(oid, idx) {
@@ -5049,8 +5170,8 @@ function editOrdDel(oid, idx) {
   if (o.items.length <= 1) { toast('⚠️ El pedido debe tener al menos un producto','e'); return; }
   if (!confirm('¿Eliminar "' + o.items[idx].name + '" del pedido?')) return;
   o.items.splice(idx, 1);
-  o.total = o.items.reduce(function(s,it){ return s + it.price * it.qty; }, 0);
-  abrirEdicionPedido(oid);
+  o.total = o.items.reduce(function(s,it){ return s+it.price*it.qty; }, 0);
+  renderEdicionPedido(oid);
 }
 
 function guardarEdicionPedido() {
@@ -5058,14 +5179,23 @@ function guardarEdicionPedido() {
   var o = null;
   for (var i = 0; i < ORD.length; i++) { if (ORD[i].id === oid) { o = ORD[i]; break; } }
   if (!o) return;
-  o.total = o.items.reduce(function(s,it){ return s + it.price * it.qty; }, 0);
+  // Guardar nota general del pedido
+  var notaEl = document.getElementById('edit-nota-pedido');
+  if (notaEl) o.notes = notaEl.value.trim();
+  // Guardar notas por producto
+  for (var j = 0; j < o.items.length; j++) {
+    var notaItEl = document.getElementById('edit-nota-' + j);
+    if (notaItEl) o.items[j].notas = notaItEl.value.trim();
+  }
+  o.total = o.items.reduce(function(s,it){ return s+it.price*it.qty; }, 0);
   saveSt();
   closeM('m-edit-ord');
   renderOrds();
+  renderCajaTablero();
   if (ASESOR_SESSION) {
     if (ASESOR_SESSION.tipo === 'cocina') { renderPanelCocina(); } else { renderPedidosAsesor(); }
   }
-  toast('✅ Pedido actualizado','s');
+  toast('✅ Pedido actualizado', 's');
 }
 
 function toggleAgotado(idx) {
