@@ -4256,16 +4256,17 @@ function pedirCuentaCliente() {
   saveSt(); renderAvisosMesa();
   // Buscar pedidos activos de esta mesa
   var pedidosMesa = ORD.filter(function(o){ return o.mesa==MESA_NUM && (o.status==='pending'||o.status==='ready'||o.status==='dispatched'); });
-  if (!pedidosMesa.length) { toast('💳 Mesero notificado', 's'); return; }
-  // Si tiene pago digital configurado mostrar ticket
-  if (tienePagoDigital()) {
-    var totalMesa = pedidosMesa.reduce(function(s,o){ return s+(o.total||0); }, 0);
-    var itemsTodos = [];
-    pedidosMesa.forEach(function(o){ (o.items||[]).forEach(function(it){ itemsTodos.push(it); }); });
-    var ordenMesa = { id: pedidosMesa[0].id, mesa: MESA_NUM, name: pedidosMesa[0].name||'', modo:'mesa', total: totalMesa, items: itemsTodos };
+  if (!pedidosMesa.length) { toast('💳 Mesero notificado — viene a cobrar', 's'); return; }
+  // Armar orden con todos los items de la mesa
+  var totalMesa = pedidosMesa.reduce(function(s,o){ return s+(o.total||0); }, 0);
+  var itemsTodos = [];
+  pedidosMesa.forEach(function(o){ (o.items||[]).forEach(function(it){ itemsTodos.push(it); }); });
+  var ordenMesa = { id:pedidosMesa[0].id, mesa:MESA_NUM, name:pedidosMesa[0].name||'', modo:'mesa', total:totalMesa, items:itemsTodos };
+  // Mostrar propina si está activa, sino ir directo al ticket
+  if (C.propinaActiva) {
     mostrarPropina(ordenMesa);
   } else {
-    toast('💳 Solicitud enviada — el mesero viene a cobrar', 's');
+    mostrarPagoDigital(ordenMesa, false);
   }
 }
 
@@ -4794,87 +4795,84 @@ function renderPedidosAsesor() {
       '<button onclick="abrirEdicionPedido(\''+o.id+'\')" style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;width:100%">✏️ Editar pedido</button>' : '';
     var items = '';
     for (var j = 0; j < o.items.length; j++) {
-      items += '<div style="font-size:12px;color:var(--cmut);display:flex;justify-content:space-between;padding:1px 0"><span>'+o.items[j].name+' x'+o.items[j].qty+'</span><span>'+(C.cur||'$')+fmt(o.items[j].price*o.items[j].qty)+'</span></div>';
+      var it = o.items[j];
+      items += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<span style="font-size:13px;font-weight:600;color:var(--ctxt)">' + it.name + ' <span style="color:var(--cp);font-weight:800">x' + it.qty + '</span></span>' +
+        '<span style="font-size:12px;color:var(--cmut)">' + (C.cur||'$') + fmt(it.price*it.qty) + '</span></div>';
+      if (it.notas) items += '<div style="font-size:11px;color:#f0a500;padding:1px 0 4px">📝 ' + it.notas + '</div>';
     }
     html += '<div style="background:'+colorFondo+';border:1px solid '+colorBorde+';border-radius:12px;padding:12px;margin-bottom:10px">'+
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+
-        '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">Mesa '+o.mesa+'</span>'+
+        '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">' + (o.modo==='mesa'?'🪑 Mesa '+(o.mesa||''):'🛵 Domicilio') + '</span>'+
         estadoBadge+tiempoBadge+
-      '</div>'+items+
-      '<div style="font-size:11px;color:var(--cmut);margin-top:6px">👤 '+o.name+' · '+o.pay+' · '+(C.cur||'$')+fmt(o.total)+'</div>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--cmut);margin-bottom:8px">👤 ' + o.name + (o.notes?' · 📝 '+o.notes:'') + '</div>'+
+      items +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:4px">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--cp)">' + (C.cur||'$') + fmt(o.total) + '</span>' +
+        '<span style="font-size:11px;color:var(--cmut)">' + (o.pay||'') + '</span>' +
+      '</div>' +
       botonListo+'</div>';
   }
   lista.innerHTML = html;
 }
 
 function renderPanelCocina() {
-  // Mostrar panel cocina, ocultar resto
+  // Mostrar panel cocina
   var cocinaPan = document.getElementById('cocina-panel');
-  if (cocinaPan) {
-    cocinaPan.style.display = 'block';
-    document.getElementById('catalog') && (document.getElementById('catalog').style.display='none');
-  }
-  var lista = document.getElementById('cocina-lista');
-  if (!lista) { lista = document.getElementById('asesor-pedidos-lista'); }
-  if (!lista) return;
-  var pedidos = ORD.filter(function(o){ return o.status==='pending'||o.status==='ready'; });
-  if (!pedidos.length) { lista.innerHTML='<div style="text-align:center;padding:32px;color:var(--cmut)">Sin pedidos activos</div>'; return; }
-  pedidos.sort(function(a,b){ return (a._ts||0)-(b._ts||0); });
-  lista.innerHTML = pedidos.map(function(o){
-    var ahora=Date.now(), mins=o._ts?Math.floor((ahora-o._ts)/60000):0;
-    var tiempoCss=mins>=15?'color:#fc8181;font-weight:700':'color:var(--cmut)';
-    var esReady=o.status==='ready';
-    var tipoBadge=o.modo==='mesa'?'🪑 Mesa '+(o.mesa||''):'🛵 Domicilio';
-    return '<div style="background:var(--ccard);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid '+(esReady?'rgba(251,146,60,.4)':'rgba(255,255,255,.07)')+'">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-      '<span style="font-size:13px;font-weight:700;color:var(--cp)">'+o.id+'</span>' +
-      '<span style="'+tiempoCss+';font-size:12px">⏱ '+mins+' min</span></div>' +
-      '<div style="font-size:12px;color:var(--cmut);margin-bottom:8px">'+tipoBadge+' · '+(o.name||'')+'</div>' +
-      (o.notes?'<div style="font-size:12px;color:#f0a500;margin-bottom:8px">📝 '+o.notes+'</div>':'')+
-      o.items.map(function(it){ return '<div style="font-size:13px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+it.name+' <strong>x'+it.qty+'</strong>'+(it.notas?' <span style="color:#f0a500;font-size:11px">— '+it.notas+'</span>':'')+'</div>'; }).join('') +
-      (!esReady?'<button onclick="cocinaPrepararPedido(\'' + o.id + '\')">🍳 Marcar como preparado</button>':
-      '<div style="margin-top:10px;text-align:center;font-weight:700;color:#fb923c;font-size:13px">✅ Preparado — esperando entrega</div>') +
-    '</div>';
-  }).join('');
-  // original ya no necesitamos el resto
-  return;
+  if (cocinaPan) cocinaPan.style.display = 'block';
+  if (document.getElementById('catalog')) document.getElementById('catalog').style.display = 'none';
 
-  if (!ASESOR_SESSION || ASESOR_SESSION.tipo !== 'cocina') return;
-  var lista = document.getElementById('asesor-pedidos-lista');
+  var lista = document.getElementById('cocina-lista');
+  if (!lista) lista = document.getElementById('asesor-pedidos-lista');
   if (!lista) return;
-  var ahora = Date.now();
-  var pedidos = ORD.filter(function(o){ return o.status === 'pending' || o.status === 'ready'; });
+
+  var pedidos = ORD.filter(function(o){ return o.status==='pending' || o.status==='ready'; });
+  if (!pedidos.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:32px;color:var(--cmut);font-size:15px">🍳 Sin pedidos pendientes</div>';
+    return;
+  }
   pedidos.sort(function(a,b){ return (a._ts||0) - (b._ts||0); });
-  var badge = document.getElementById('asesor-pedidos-badge');
-  var pendientes = pedidos.filter(function(o){ return o.status==='pending'; }).length;
-  if (badge) { if (pendientes>0){ badge.textContent=pendientes; badge.style.display='flex'; } else { badge.style.display='none'; } }
-  if (!pedidos.length) { lista.innerHTML='<div style="text-align:center;padding:24px;color:var(--cmut);font-size:13px">Sin pedidos pendientes en este momento</div>'; return; }
+
+  var ahora = Date.now();
   var html = '';
-  for (var i=0; i<pedidos.length; i++) {
+  for (var i = 0; i < pedidos.length; i++) {
     var o = pedidos[i];
     var esReady = o.status === 'ready';
-    var minutos = o._ts ? Math.floor((ahora-o._ts)/60000) : null;
-    var urgente = minutos !== null && minutos >= 15;
+    var mins = o._ts ? Math.floor((ahora - o._ts) / 60000) : 0;
+    var urgente = mins >= 15;
     var colorBorde = esReady ? 'rgba(251,146,60,.5)' : urgente ? 'rgba(229,62,62,.5)' : 'rgba(240,165,0,.3)';
-    var colorFondo = esReady ? 'rgba(251,146,60,.08)' : urgente ? 'rgba(229,62,62,.07)' : 'rgba(240,165,0,.06)';
-    var tipoLabel = o.modo==='mesa'
-      ? '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🪑 Mesa '+o.mesa+'</span>'
-      : '<span style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🛵 Domicilio</span>';
-    var tiempoBadge = minutos!==null ? '<span style="background:'+(urgente?'rgba(229,62,62,.2)':'rgba(240,165,0,.15)')+';color:'+(urgente?'#fc8181':'#f0a500')+';border:1px solid '+(urgente?'rgba(229,62,62,.4)':'rgba(240,165,0,.3)')+';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">'+minutos+' min</span>' : '';
+    var colorFondo = esReady ? 'rgba(251,146,60,.08)' : urgente ? 'rgba(229,62,62,.07)' : 'rgba(255,255,255,.03)';
+    var tipoBadge = o.modo === 'mesa'
+      ? '<span style="background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:2px 10px;font-size:12px;font-weight:700">🪑 Mesa ' + (o.mesa||'') + '</span>'
+      : '<span style="background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:50px;padding:2px 10px;font-size:12px;font-weight:700">🛵 Domicilio</span>';
+    var tiempoBadge = '<span style="background:' + (urgente?'rgba(229,62,62,.2)':'rgba(255,255,255,.08)') + ';color:' + (urgente?'#fc8181':'var(--cmut)') + ';border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏱ ' + mins + ' min</span>';
     var estadoBadge = esReady
-      ? '<span style="background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.4);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">🍳 Preparado</span>'
-      : '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700">⏳ Por preparar</span>';
-    var items = '';
-    for (var j=0; j<o.items.length; j++) {
-      items += '<div style="font-size:13px;font-weight:600;color:var(--ctxt);display:flex;justify-content:space-between;padding:2px 0"><span>'+o.items[j].name+' <strong>x'+o.items[j].qty+'</strong></span></div>';
+      ? '<span style="background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.4);border-radius:50px;padding:2px 10px;font-size:12px;font-weight:700">✅ Preparado</span>'
+      : '<span style="background:rgba(240,165,0,.15);color:#f0a500;border:1px solid rgba(240,165,0,.3);border-radius:50px;padding:2px 10px;font-size:12px;font-weight:700">⏳ Por preparar</span>';
+
+    // Items desglosados
+    var itemsHtml = '';
+    for (var j = 0; j < o.items.length; j++) {
+      var it = o.items[j];
+      itemsHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<span style="font-size:14px;font-weight:600;color:var(--ctxt)">' + it.name + '</span>' +
+        '<span style="font-size:16px;font-weight:800;color:var(--cp);background:rgba(240,165,0,.1);border-radius:6px;padding:2px 10px">x' + it.qty + '</span>' +
+        '</div>';
+      if (it.notas) {
+        itemsHtml += '<div style="font-size:11px;color:#f0a500;padding:2px 0 6px">📝 ' + it.notas + '</div>';
+      }
     }
-    var boton = !esReady
-      ? '<button onclick="cocinaPrepararPedido(\''+o.id+'\')" style="background:#f0a500;color:#000;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;width:100%">🍳 Marcar como preparado</button>'
-      : '<div style="text-align:center;font-size:12px;color:#fb923c;margin-top:8px;font-weight:600">✅ Ya marcado como listo</div>';
-    html += '<div style="background:'+colorFondo+';border:1px solid '+colorBorde+';border-radius:12px;padding:14px;margin-bottom:12px">'+
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">'+tipoLabel+estadoBadge+tiempoBadge+'</div>'+
-      '<div style="font-size:12px;color:var(--cmut);margin-bottom:8px">👤 '+o.name+(o.notes?' · 📝 '+o.notes:'')+'</div>'+
-      items+boton+'</div>';
+
+    var btnAccion = !esReady
+      ? '<button onclick="cocinaPrepararPedido(\'' + o.id + '\')" style="width:100%;margin-top:12px;background:#f0a500;color:#000;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:700;cursor:pointer">🍳 Marcar como preparado</button>'
+      : '<div style="margin-top:10px;text-align:center;padding:10px;background:rgba(251,146,60,.1);border-radius:8px;font-weight:700;color:#fb923c;font-size:13px">✅ Preparado — esperando que el mesero lo entregue</div>';
+
+    html += '<div style="background:' + colorFondo + ';border:1px solid ' + colorBorde + ';border-radius:14px;padding:14px;margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">' + tipoBadge + estadoBadge + tiempoBadge + '</div>' +
+      '<div style="font-size:12px;color:var(--cmut);margin-bottom:10px">👤 ' + (o.name||'') + (o.notes ? ' &nbsp;·&nbsp; 📝 ' + o.notes : '') + '</div>' +
+      itemsHtml + btnAccion +
+      '</div>';
   }
   lista.innerHTML = html;
 }
@@ -5022,10 +5020,27 @@ function upPagoQR(ev) {
   var file = ev.target.files[0]; if (!file) return;
   var r = new FileReader();
   r.onload = function(e) {
-    C.pagoQR = e.target.result;
-    var prev = document.getElementById('prev-pago-qr');
-    if (prev) { prev.src = C.pagoQR; prev.style.display = 'block'; }
-    saveSt(); toast('✅ QR guardado', 's');
+    // Comprimir imagen antes de guardar
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 400;
+      canvas.width = Math.min(img.width, max);
+      canvas.height = Math.min(img.height, max);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      C.pagoQR = canvas.toDataURL('image/jpeg', 0.85);
+      var prev = document.getElementById('prev-pago-qr');
+      if (prev) { prev.src = C.pagoQR; prev.style.display = 'block'; }
+      // Guardar también los campos actuales
+      var celEl = document.getElementById('c-pago-cel');
+      var llaveEl = document.getElementById('c-pago-llave');
+      var titEl = document.getElementById('c-pago-titular');
+      if (celEl) C.pagoCel = celEl.value;
+      if (llaveEl) C.pagoLlave = llaveEl.value;
+      if (titEl) C.pagoTitular = titEl.value;
+      saveSt(); toast('✅ QR guardado', 's');
+    };
+    img.src = e.target.result;
   };
   r.readAsDataURL(file);
 }
@@ -5058,9 +5073,9 @@ function generarTicketHTML(orden, conPropina) {
   }
   var totalFinal = total + propinaMonto;
   var metodos = [];
-  if (C.nequiActivo) metodos.push('<span style="background:#8B5CF6;color:#fff;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700">Nequi</span>');
-  if (C.daviplataActivo) metodos.push('<span style="background:#E4001B;color:#fff;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700">Daviplata</span>');
-  if (C.bancolombiaActivo) metodos.push('<span style="background:#FFCC00;color:#000;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700">Bancolombia</span>');
+  if (C.nequiActivo)       metodos.push('<span style="background:#8B5CF6;color:#fff;padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700">Nequi</span>');
+  if (C.daviplataActivo)   metodos.push('<span style="background:#E4001B;color:#fff;padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700">Daviplata</span>');
+  if (C.bancolombiaActivo) metodos.push('<span style="background:#FFCC00;color:#000;padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700">Bancolombia</span>');
 
   var items = (orden.items || []).map(function(it) {
     return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;font-size:13px">' +
@@ -5072,7 +5087,10 @@ function generarTicketHTML(orden, conPropina) {
     '<div style="text-align:center;margin:16px 0">' +
     '<div style="font-size:13px;font-weight:700;color:#333;margin-bottom:8px">Paga aquí 👇</div>' +
     '<img src="' + C.pagoQR + '" style="width:180px;height:180px;border-radius:8px;border:2px solid #ddd">' +
-    '</div>' : '';
+    '</div>' :
+    '<div style="background:#f8f8f8;border-radius:8px;padding:12px;margin:12px 0;text-align:center">' +
+    '<div style="font-size:13px;color:#555">El mesero pasará a cobrar en un momento</div>' +
+    '</div>';
 
   var llaveHtml = (C.pagoCel || C.pagoLlave) ?
     '<div style="background:#f8f8f8;border-radius:8px;padding:12px;margin:12px 0;text-align:center">' +
@@ -5112,13 +5130,25 @@ function copiarLlave() {
 function descargarTicket() {
   var contenido = document.getElementById('ticket-contenido');
   if (!contenido) return;
-  // En móvil — abrir en nueva pestaña para guardar
+
+  // Intentar descarga con html2canvas si está disponible
+  // Si no, abrir ventana para guardar manualmente
   var win = window.open('', '_blank');
-  win.document.write('<html><body style="margin:0;background:#fff">' + contenido.outerHTML +
-    '<br><button onclick="window.print()" style="width:100%;padding:12px;background:#333;color:#fff;border:none;font-size:16px;cursor:pointer">💾 Guardar / Imprimir</button>' +
-    '</body></html>');
+  if (!win) { toast('⚠️ Activa las ventanas emergentes para descargar', 'e'); return; }
+
+  var estilos = '<style>*{font-family:Arial,sans-serif;box-sizing:border-box}body{margin:0;background:#fff;display:flex;justify-content:center;padding:20px}</style>';
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width">' + estilos + '</head><body>' +
+    contenido.outerHTML +
+    '<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;max-width:360px;width:100%">' +
+    '<button onclick="window.print()" style="width:100%;padding:14px;background:#333;color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;border-radius:8px">🖨️ Imprimir / Guardar PDF</button>' +
+    '<button onclick="compartir()" style="width:100%;padding:14px;background:#25d366;color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;border-radius:8px">📤 Compartir</button>' +
+    '</div>' +
+    '<script>function compartir(){if(navigator.share){navigator.share({title:"Ticket de pago",text:document.body.innerText}).catch(function(){});}else{alert("Toca el botón compartir de tu navegador");}}<\/script>' +
+    '</body></html>';
+
+  win.document.write(html);
   win.document.close();
-  toast('📥 Abre la imagen y guárdala en tu galería', 's');
+  toast('📥 Toca "Imprimir" y guarda como PDF, o toca "Compartir"', 's');
 }
 
 function mostrarPagoDigital(orden, conPropina) {
