@@ -409,7 +409,6 @@ function hideMask(){
     </div>
     <span id="hdr-name">Mi Tienda</span>
   </div>
-  <div id="alerta-represados" style="display:none;background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;max-width:200px;text-align:center"></div>
   <div class="hact" style="display:none">
   </div>
   <div class="hact">
@@ -418,7 +417,22 @@ function hideMask(){
   </div>
 </header>
 
-<section id="hero">
+<!-- BANNER PUBLICITARIO — encima del hero, solo si está activo -->
+<div id="banner-pub" style="display:none;cursor:pointer" onclick="abrirBannerPub()">
+  <div id="banner-pub-inner" style="display:flex;align-items:center;gap:10px;padding:10px 16px;position:relative">
+    <div id="banner-pub-img-wrap" style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1)">
+      <span id="banner-pub-ico" style="font-size:18px">📢</span>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div id="banner-pub-titulo" style="font-size:13px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Pauta aquí tu negocio</div>
+      <div id="banner-pub-sub" style="font-size:11px;opacity:.75;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Llega a más clientes</div>
+    </div>
+    <div id="banner-pub-cta" style="padding:5px 12px;border-radius:50px;font-size:12px;font-weight:600;flex-shrink:0;white-space:nowrap">Ver →</div>
+    <button id="banner-pub-close" onclick="event.stopPropagation();cerrarBannerPub()" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.2);border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:inherit">✕</button>
+  </div>
+</div>
+
+<section id="hero" style="position:relative">
   <div id="hero-bg">
     <div id="hero-grad"></div>
     <img id="hero-bimg" src="" alt="">
@@ -434,40 +448,19 @@ function hideMask(){
       <span id="hero-btn2-wrap"><button class="btn bo blg" id="hero-btn2" onclick="heroBtnClick(2)">Mi Carrito 🛒</button></span>
     </div>
   </div>
+  <!-- BOTÓN PWA dentro del hero — parte inferior -->
+  <div id="pwa-install-btn" style="display:none;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:10;animation:fabIn .4s cubic-bezier(.34,1.56,.64,1)">
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 16px;border-radius:50px;backdrop-filter:blur(8px);background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15)">
+      <span id="pwa-btn-ico" style="font-size:15px">📲</span>
+      <span id="pwa-btn-label" style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap">Instalar App</span>
+      <button onclick="instalarPWA()" id="pwa-install-action" style="padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;border:none;white-space:nowrap">Instalar</button>
+      <button onclick="ocultarFabPWA()" style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">✕</button>
+    </div>
+  </div>
 </section>
 
 <div id="ticker-wrap"><div id="ticker-tr"></div></div>
 <!-- Banner de mesa activa -->
-
-<!-- BARRA PWA -->
-<div id="pwa-install-btn" style="display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--chdr,#0d0d1a);border-bottom:1px solid rgba(255,255,255,.08)">
-  <div style="display:flex;align-items:center;gap:10px;flex:1">
-    <span id="pwa-btn-ico" style="font-size:20px;flex-shrink:0">📲</span>
-    <div style="display:flex;flex-direction:column;line-height:1.3">
-      <span id="pwa-btn-label" style="font-size:13px;font-weight:600;color:var(--chtxt,#f0f0ff)">Instalar App</span>
-      <span id="pwa-btn-sub" style="font-size:11px;color:var(--cmut,#8888aa)">Gratis · Funciona sin internet</span>
-    </div>
-  </div>
-  <button onclick="instalarPWA()" id="pwa-install-action" style="padding:7px 16px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--chtxt,#f0f0ff);white-space:nowrap;transition:background .2s">Instalar</button>
-  <button onclick="ocultarFabPWA()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);border:none;color:var(--cmut,#8888aa);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s">✕</button>
-</div>
-
-
-<!-- BANNER PUBLICITARIO -->
-<div id="banner-pub" style="display:none;cursor:pointer;transition:opacity .2s" onclick="abrirBannerPub()">
-  <div id="banner-pub-inner" style="display:flex;align-items:center;gap:10px;padding:10px 16px;position:relative">
-    <div id="banner-pub-img-wrap" style="width:36px;height:36px;border-radius:8px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1)">
-      <span id="banner-pub-ico" style="font-size:20px">📢</span>
-    </div>
-    <div style="flex:1;min-width:0">
-      <div id="banner-pub-titulo" style="font-size:13px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Pauta aquí tu negocio</div>
-      <div id="banner-pub-sub" style="font-size:11px;opacity:.75;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Llega a más clientes</div>
-    </div>
-    <div id="banner-pub-cta" style="padding:5px 12px;border-radius:50px;font-size:12px;font-weight:600;flex-shrink:0;white-space:nowrap">Ver más →</div>
-    <button id="banner-pub-close" onclick="event.stopPropagation();cerrarBannerPub()" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.2);border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:inherit;transition:background .2s">✕</button>
-  </div>
-</div>
-
 <div id="mesa-banner" style="display:none;background:linear-gradient(90deg,#16a34a,#059669);color:#fff;text-align:center;padding:10px 16px;font-weight:700;font-size:15px;letter-spacing:.03em">
   🪑 Estás en la <span id="mesa-banner-num"></span> — Haz tu pedido y lo atendemos
   <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap">
@@ -504,6 +497,7 @@ function hideMask(){
     <div id="asesor-session-name" style="font-weight:700;font-size:14px;color:var(--cp)"></div>
   </div>
   <div id="asesor-session-mesas" style="font-size:12px;color:var(--cmut)"></div>
+  <span id="alerta-represados" style="display:none;background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3);border-radius:50px;padding:3px 8px;font-size:11px;font-weight:600"></span>
   <button class="btn bsm bo" style="border-radius:8px;font-size:12px;position:relative" onclick="togglePanelAvisos()">
     🔔 Avisos
     <span id="avisos-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#f0a500;color:#000;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center">0</span>
@@ -1366,6 +1360,7 @@ function hideMask(){
 
       <!-- ORDERS -->
       <section class="asec" id="sec-orders">
+        <div id="alerta-represados-caja" style="display:none;background:rgba(229,62,62,.1);color:#fc8181;border:1px solid rgba(229,62,62,.2);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
         <div id="alertas-pago-wrap" style="margin-bottom:16px">
           <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">⚠️ Reportes de pago pendientes</div>
           <div id="alertas-pago-lista"></div>
@@ -4344,17 +4339,25 @@ function mostrarQRPago() {
 // ALERTA REPRESADOS
 // ============================================================
 function verificarRepresados() {
-  // Solo mostrar a meseros, cocina o cuando el admin está abierto
-  var esAdmin = document.getElementById('adm') && document.getElementById('adm').classList.contains('show');
-  var esMesero = !!ASESOR_SESSION;
-  if (!esAdmin && !esMesero) return;
   var limite = parseInt(C.alertaMinutos) || 15;
   var ahora = Date.now();
   var rep = ORD.filter(function(o){ return o.status==='pending' && o._ts && Math.floor((ahora-o._ts)/60000) >= limite; });
-  var el = document.getElementById('alerta-represados');
-  if (!el) return;
-  if (rep.length) { el.style.display='flex'; el.textContent='⚠️ '+rep.length+' pedido'+(rep.length>1?'s':'')+' llevan más de '+limite+' min'; }
-  else el.style.display='none';
+  var txt = rep.length ? '⚠️ ' + rep.length + ' pedido' + (rep.length>1?'s':'') + ' +' + limite + 'min' : '';
+  // En barra asesor
+  var elAsesor = document.getElementById('alerta-represados');
+  if (elAsesor && ASESOR_SESSION) {
+    elAsesor.textContent = txt;
+    elAsesor.style.display = rep.length ? 'inline-flex' : 'none';
+  } else if (elAsesor) {
+    elAsesor.style.display = 'none';
+  }
+  // En caja admin
+  var elCaja = document.getElementById('alerta-represados-caja');
+  if (elCaja) {
+    var esAdmin = document.getElementById('adm') && document.getElementById('adm').classList.contains('show');
+    elCaja.textContent = rep.length ? '⚠️ ' + rep.length + ' pedido' + (rep.length>1?'s':'') + ' llevan más de ' + limite + ' minutos sin atender' : '';
+    elCaja.style.display = (esAdmin && rep.length) ? 'block' : 'none';
+  }
 }
 
 // ============================================================
@@ -5231,7 +5234,7 @@ function aplicarPWAFab() {
   }
   // Mostrar u ocultar
   if (C.pwaActivo) {
-    btn.style.display = 'flex';
+    btn.style.display = 'block';
   } else {
     btn.style.display = 'none';
   }
