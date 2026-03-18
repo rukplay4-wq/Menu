@@ -1491,7 +1491,7 @@ function hideMask(){
         <!-- SUBMENÚ CAJA -->
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:12px">
           <button class="btn bsm bp" id="cajatab-tablero"  onclick="cajaSwitchTab('tablero')">📊 Tablero</button>
-          <button class="btn bsm bo" id="cajatab-pendientes" onclick="cajaSwitchTab('pendientes')">⏳ Pendientes</button>
+          <button class="btn bsm bo" id="cajatab-pendientes" onclick="cajaSwitchTab('pendientes')" style="position:relative">⏳ Pendientes<span id="caja-pago-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#68d391;color:#000;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center">0</span></button>
           <button class="btn bsm bo" id="cajatab-mesas"    onclick="cajaSwitchTab('mesas')">🪑 Mesas</button>
           <button class="btn bsm bo" id="cajatab-domicilios" onclick="cajaSwitchTab('domicilios')">🛵 Domicilios</button>
           <button class="btn bsm bo" id="cajatab-alertas"  onclick="cajaSwitchTab('alertas')">🔔 Alertas</button>
@@ -1501,6 +1501,8 @@ function hideMask(){
 
         <!-- TAB: TABLERO -->
         <div id="cajapanel-tablero">
+        <!-- ALERTAS DE PAGO — siempre visibles -->
+        <div id="alertas-pago-tablero" style="margin-bottom:14px"></div>
         <!-- BUSCADOR DE MESA EN CAJA -->
         <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:16px">
           <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🔍 Buscar mesa / cobrar en caja</div>
@@ -5896,21 +5898,39 @@ function solicitarRecibo() {
 // Alerta pagos pendientes en caja
 function renderAlertasPago() {
   var alertas = (C.alertasPago || []).filter(function(a) { return Date.now() - a._ts < 7200000; });
-  var el = document.getElementById('alertas-pago-lista');
-  if (!el) return;
-  if (!alertas.length) { el.innerHTML = '<div style="color:var(--cmut);font-size:13px">Sin reportes de pago pendientes</div>'; return; }
-  var html = '';
-  for (var i = 0; i < alertas.length; i++) {
-    var a = alertas[i];
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:10px;margin-bottom:8px">' +
-      '<div style="flex:1">' +
-      '<div style="font-size:13px;font-weight:700;color:var(--cp)">' + (a.mesa ? '🪑 Mesa ' + a.mesa : '🛵 Domicilio') + ' — ' + a.nombre + '</div>' +
-      '<div style="font-size:12px;color:var(--cmut)">' + a.ts + ' · ' + (C.cur||'$') + fmt(a.total) + '</div></div>' +
-      '<button data-ts="' + a._ts + '" onclick="confirmarPagoAlerta(this.dataset.ts)" style="background:#68d391;color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✅ Confirmar</button>' +
-      '<button data-ts="' + a._ts + '" onclick="limpiarAlertaPago(this.dataset.ts)" style="background:none;border:none;color:var(--cmut);cursor:pointer;font-size:14px">✕</button>' +
-    '</div>';
+
+  // Badge en pestaña pendientes
+  var badge = document.getElementById('caja-pago-badge');
+  if (badge) { if(alertas.length){badge.textContent=alertas.length;badge.style.display='flex';}else{badge.style.display='none';} }
+
+  function buildAlertas(container, destacado) {
+    if (!container) return;
+    if (!alertas.length) {
+      if (destacado) container.innerHTML = '';
+      else container.innerHTML = '<div style="color:var(--cmut);font-size:13px">Sin reportes de pago pendientes</div>';
+      return;
+    }
+    var h = destacado
+      ? '<div style="background:rgba(104,211,145,.08);border:2px solid rgba(104,211,145,.3);border-radius:12px;padding:12px;margin-bottom:4px"><div style="font-size:12px;font-weight:700;color:#68d391;text-transform:uppercase;margin-bottom:10px">💳 ' + alertas.length + ' cliente' + (alertas.length>1?'s':'') + ' reportaron su pago — confirma aquí</div>'
+      : '';
+    for (var i = 0; i < alertas.length; i++) {
+      var a = alertas[i];
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;margin-bottom:6px">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:14px;font-weight:700;color:#68d391">' + (a.mesa ? '🪑 '+(C.mesaLabel||'Mesa')+' ' + a.mesa : '🛵 Domicilio') + '</div>' +
+          '<div style="font-size:13px;color:var(--ctxt)">' + a.nombre + '</div>' +
+          '<div style="font-size:12px;color:var(--cmut)">' + a.ts + ' · ' + (C.cur||'$') + fmt(a.total) + '</div>' +
+        '</div>' +
+        '<button data-ts="' + a._ts + '" onclick="confirmarPagoAlerta(this.dataset.ts)" style="background:#68d391;color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✅ Confirmar pago</button>' +
+        '<button data-ts="' + a._ts + '" onclick="limpiarAlertaPago(this.dataset.ts)" style="background:none;border:none;color:var(--cmut);cursor:pointer;font-size:16px;padding:4px">✕</button>' +
+      '</div>';
+    }
+    if (destacado) h += '</div>';
+    container.innerHTML = h;
   }
-  el.innerHTML = html;
+
+  buildAlertas(document.getElementById('alertas-pago-tablero'), true);
+  buildAlertas(document.getElementById('alertas-pago-lista'), false);
 }
 
 function confirmarPagoAlerta(ts) {
@@ -5920,8 +5940,8 @@ function confirmarPagoAlerta(ts) {
   var ord = ORD.find(function(o) { return o.id === alerta.oid; });
   if (ord) { ord.status = 'paid'; ord.paidTs = new Date().toLocaleString('es-CO'); }
   limpiarAlertaPago(ts);
-  saveSt(); renderOrds(); renderAlertasPago();
-  toast('✅ Pago confirmado', 's');
+  saveSt(); renderOrds(); renderAlertasPago(); renderCajaTablero();
+  toast('✅ Pago de '+(alerta.mesa?(C.mesaLabel||'Mesa')+' '+alerta.mesa:'domicilio')+' confirmado', 's');
 }
 
 function limpiarAlertaPago(ts) {
