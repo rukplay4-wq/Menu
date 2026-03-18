@@ -1501,51 +1501,41 @@ function hideMask(){
 
         <!-- TAB: TABLERO -->
         <div id="cajapanel-tablero">
-        <!-- ALERTAS DE PAGO — siempre visibles -->
-        <div id="alertas-pago-tablero" style="margin-bottom:14px"></div>
-        <!-- BUSCADOR DE MESA EN CAJA -->
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;color:var(--cp);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🔍 Buscar mesa / cobrar en caja</div>
-          <div style="display:flex;gap:8px">
-            <input class="fi" id="caja-busca-mesa" type="number" min="1" placeholder="Ej: 999" style="max-width:140px" onkeydown="if(event.key==='Enter')buscarMesaCaja()">
-            <button class="btn bp" style="border-radius:8px;white-space:nowrap" onclick="buscarMesaCaja()">🔍 Buscar mesa</button>
-          </div>
-          <div id="caja-mesa-resultado" style="margin-top:12px"></div>
-        </div>
 
-        <div id="alerta-represados-caja" style="display:none;background:rgba(229,62,62,.1);color:#fc8181;border:1px solid rgba(229,62,62,.2);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
+          <!-- ALERTAS DE PAGO -->
+          <div id="alertas-pago-tablero" style="margin-bottom:14px"></div>
 
-        <!-- TABLERO DE CAJA -->
-        <div id="caja-tablero" style="margin-bottom:20px">
+          <!-- HEADER TABLERO -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <div class="asttl" style="margin:0">🧾 Tablero de Caja</div>
             <div style="display:flex;gap:8px">
               <button class="btn bsm bo" onclick="renderCajaTablero()" style="border-radius:8px">🔄 Actualizar</button>
-              <button class="btn bsm bp" onclick="cierreCaja()" style="border-radius:8px">🔒 Cierre de caja</button>
+              <button class="btn bsm bp" onclick="cierreCaja()" style="border-radius:8px">🔒 Cierre</button>
             </div>
           </div>
-          <!-- Stats principales -->
-          <div class="agrid" id="caja-stats" style="margin-bottom:14px"></div>
-          <!-- Desglose por método de pago -->
+
+          <!-- STATS PRINCIPALES incluyendo propinas -->
+          <div class="agrid" id="caja-stats" style="margin-bottom:16px"></div>
+
+          <!-- DESGLOSE -->
           <div class="agrid">
             <div class="ac">
               <div class="acttl">💵 Por método de pago</div>
               <div id="caja-metodos"></div>
             </div>
             <div class="ac">
-              <div class="acttl">👥 Por asesor</div>
+              <div class="acttl">👥 Por asesor + propinas</div>
               <div id="caja-asesores"></div>
             </div>
             <div class="ac">
-              <div class="acttl">📦 Productos vendidos hoy</div>
+              <div class="acttl">📦 Platos vendidos hoy</div>
               <div id="caja-productos"></div>
             </div>
             <div class="ac">
-              <div class="acttl">🪑 Por tipo de pedido</div>
+              <div class="acttl">🪑 Mesa vs 🛵 Domicilio</div>
               <div id="caja-tipos"></div>
             </div>
           </div>
-        </div>
 
         </div><!-- fin tab tablero -->
 
@@ -6338,6 +6328,7 @@ function renderCajaTablero() {
   var despachados = ordHoy.filter(function(o){ return o.status==='dispatched'; });
   var pagados     = ordHoy.filter(function(o){ return o.status==='paid'; });
   var totalCobrado = pagados.reduce(function(s,o){ return s+(o.total||0); }, 0);
+  var totalPropinas = pagados.reduce(function(s,o){ return s+(o.propina||0); }, 0);
   var totalPend    = pendientes.reduce(function(s,o){ return s+(o.total||0); }, 0);
   var totalDesp    = despachados.reduce(function(s,o){ return s+(o.total||0); }, 0);
   var totalDia     = ordHoy.filter(function(o){ return o.status!=='devolucion'; }).reduce(function(s,o){ return s+(o.total||0); }, 0);
@@ -6348,7 +6339,8 @@ function renderCajaTablero() {
     '<div class="ac"><div style="font-size:11px;color:var(--cmut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Total del día</div><div style="font-size:24px;font-weight:700;color:#68d391">'+(C.cur||'$')+fmt(totalDia)+'</div></div>' +
     '<div class="ac"><div style="font-size:11px;color:var(--cmut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">✅ Cobrado</div><div style="font-size:24px;font-weight:700;color:var(--cp)">'+(C.cur||'$')+fmt(totalCobrado)+'</div><div style="font-size:11px;color:var(--cmut)">'+pagados.length+' pedidos</div></div>' +
     '<div class="ac"><div style="font-size:11px;color:var(--cmut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">🚀 Despachado</div><div style="font-size:24px;font-weight:700;color:#63b3ed">'+(C.cur||'$')+fmt(totalDesp)+'</div><div style="font-size:11px;color:var(--cmut)">'+despachados.length+' pedidos</div></div>' +
-    '<div class="ac"><div style="font-size:11px;color:var(--cmut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">⏳ Pendiente</div><div style="font-size:24px;font-weight:700;color:#f0a500">'+(C.cur||'$')+fmt(totalPend)+'</div><div style="font-size:11px;color:var(--cmut)">'+pendientes.length+' pedidos</div></div>';
+    '<div class="ac"><div style="font-size:11px;color:var(--cmut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">⏳ Pendiente</div><div style="font-size:24px;font-weight:700;color:#f0a500">'+(C.cur||'$')+fmt(totalPend)+'</div><div style="font-size:11px;color:var(--cmut)">'+pendientes.length+' pedidos</div></div>' +
+    '<div class="ac" style="border:1px solid rgba(240,165,0,.25);background:rgba(240,165,0,.04)"><div style="font-size:11px;color:var(--cp);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;font-weight:700">💰 Propinas</div><div style="font-size:24px;font-weight:700;color:var(--cp)">'+(C.cur||'$')+fmt(totalPropinas)+'</div><div style="font-size:11px;color:var(--cmut)">Para el personal</div></div>';
 
   // Por método de pago
   var metodos = {};
@@ -6373,13 +6365,14 @@ function renderCajaTablero() {
     }
   }
 
-  // Por asesor
+  // Por asesor — con propinas
   var asesoresVentas = {};
   pagados.forEach(function(o) {
     var a = o.asesorCobro || o.tomadoby || '—';
-    if (!asesoresVentas[a]) asesoresVentas[a] = { count:0, total:0 };
+    if (!asesoresVentas[a]) asesoresVentas[a] = { count:0, total:0, propinas:0 };
     asesoresVentas[a].count++;
     asesoresVentas[a].total += o.total||0;
+    asesoresVentas[a].propinas += o.propina||0;
   });
   var aseEl = document.getElementById('caja-asesores');
   if (aseEl) {
@@ -6388,10 +6381,18 @@ function renderCajaTablero() {
     else {
       aseEl.innerHTML = akeys.sort(function(a,b){ return asesoresVentas[b].total - asesoresVentas[a].total; })
         .map(function(a) {
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
-            '<div><div style="font-size:13px;font-weight:600">'+a+'</div><div style="font-size:11px;color:var(--cmut)">'+asesoresVentas[a].count+' cobrado'+(asesoresVentas[a].count>1?'s':'')+'</div></div>' +
-            '<div style="font-size:14px;font-weight:700;color:var(--cp)">'+(C.cur||'$')+fmt(asesoresVentas[a].total)+'</div></div>';
-        }).join('');
+          var p = asesoresVentas[a];
+          return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<div style="font-size:13px;font-weight:600">'+a+'</div>' +
+              '<div style="font-size:14px;font-weight:700;color:var(--cp)">'+(C.cur||'$')+fmt(p.total)+'</div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--cmut);margin-top:2px">' +
+              '<span>'+p.count+' cobrado'+(p.count>1?'s':'')+'</span>' +
+              (p.propinas>0?'<span style="color:var(--cp);font-weight:600">💰 Propina: '+(C.cur||'$')+fmt(p.propinas)+'</span>':'') +
+            '</div></div>';
+        }).join('') +
+        (totalPropinas>0?'<div style="display:flex;justify-content:space-between;padding-top:8px;font-weight:700;font-size:13px;border-top:1px solid rgba(255,255,255,.08);margin-top:4px"><span style="color:var(--cp)">💰 Total propinas</span><span style="color:var(--cp)">'+(C.cur||'$')+fmt(totalPropinas)+'</span></div>':'');
     }
   }
 
