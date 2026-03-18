@@ -5921,7 +5921,7 @@ function renderAlertasPago() {
           '<div style="font-size:13px;color:var(--ctxt)">' + a.nombre + '</div>' +
           '<div style="font-size:12px;color:var(--cmut)">' + a.ts + ' · ' + (C.cur||'$') + fmt(a.total) + '</div>' +
         '</div>' +
-        '<button data-ts="' + a._ts + '" onclick="confirmarPagoAlerta(this.dataset.ts)" style="background:#68d391;color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✅ Confirmar pago</button>' +
+        '<button data-ts="' + a._ts + '" data-mesa="' + (a.mesa||'') + '" onclick="irAPedidoMesa(this.dataset.mesa,this.dataset.ts)" style="background:var(--cp);color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">👁 Ver pedido</button>' +
         '<button data-ts="' + a._ts + '" onclick="limpiarAlertaPago(this.dataset.ts)" style="background:none;border:none;color:var(--cmut);cursor:pointer;font-size:16px;padding:4px">✕</button>' +
       '</div>';
     }
@@ -5940,7 +5940,9 @@ function confirmarPagoAlerta(ts) {
   var ord = ORD.find(function(o) { return o.id === alerta.oid; });
   if (ord) { ord.status = 'paid'; ord.paidTs = new Date().toLocaleString('es-CO'); }
   limpiarAlertaPago(ts);
-  saveSt(); renderOrds(); renderAlertasPago(); renderCajaTablero();
+  saveSt(); renderOrds(); renderCajaTablero(); renderAlertasPago();
+  // Refrescar tab mesas para mostrar actualizado
+  if (_cajaTab === 'mesas') renderOrdsPorTipo('mesa');
   toast('✅ Pago de '+(alerta.mesa?(C.mesaLabel||'Mesa')+' '+alerta.mesa:'domicilio')+' confirmado', 's');
 }
 
@@ -6857,7 +6859,9 @@ function buildOrdCard(o) {
     btns += '<button class="btn bsm" style="background:rgba(229,62,62,.1);color:#fc8181;border:1px solid rgba(229,62,62,.3)" data-oid="'+o.id+'" onclick="solicitarAnulacion(this.dataset.oid)">⛔ Anular</button>';
   }
   if (o.status==='dispatched') {
-    btns += '<button class="btn bsm" style="background:rgba(56,161,105,.2);color:#68d391;border:1px solid rgba(56,161,105,.4)" data-oid="'+o.id+'" onclick="markPaid(this.dataset.oid)">✅ Cobrado</button>';
+    var tieneAlerta = (C.alertasPago||[]).some(function(a){ return a.mesa==o.mesa && Date.now()-a._ts<7200000; });
+    var estiloBtn = tieneAlerta ? 'background:#68d391;color:#000;border:none;animation:none;font-size:14px;padding:10px 18px' : 'background:rgba(56,161,105,.2);color:#68d391;border:1px solid rgba(56,161,105,.4)';
+    btns += '<button class="btn bsm" style="'+estiloBtn+'" data-oid="'+o.id+'" onclick="markPaid(this.dataset.oid)">'+(tieneAlerta?'💳 Confirmar y cobrar':'✅ Cobrado')+'</button>';
     btns += '<button class="btn bsm" style="background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3)" data-oid="'+o.id+'" onclick="markDevolucion(this.dataset.oid)">🔄 Devolución</button>';
     btns += '<button class="btn bsm bo" data-oid="'+o.id+'" onclick="abrirFactura(this.dataset.oid)">🧾 Factura</button>';
     btns += '<button class="btn bsm bo" data-oid="'+o.id+'" onclick="sendStatus(this.dataset.oid)">💬 WA</button>';
@@ -6870,7 +6874,7 @@ function buildOrdCard(o) {
     btns += '<button class="btn bsm bo" data-oid="'+o.id+'" onclick="abrirFactura(this.dataset.oid)">🧾 Factura</button>';
     btns += '<button class="btn bsm bo" data-oid="'+o.id+'" onclick="sendStatus(this.dataset.oid)">💬 WA</button>';
   }
-  return '<div class="ocard">' +
+  return '<div class="ocard" style="'+(tieneAlerta?'border:2px solid #68d391 !important;background:rgba(104,211,145,.04)':'')+'">' +
     '<div class="ochead">' +
       '<div>' +
         '<div class="ocnm">'+o.name+'</div>' +
@@ -7652,6 +7656,21 @@ function cfgSwitchTab(tab) {
       });
     }
   }
+}
+
+function irAPedidoMesa(numMesa, alertaTs) {
+  cajaSwitchTab('mesas');
+  window._mesaDestacada = numMesa;
+  setTimeout(function() {
+    var tarjetas = document.querySelectorAll('#orders-mesas-list .ocard');
+    for (var i = 0; i < tarjetas.length; i++) {
+      var t = tarjetas[i];
+      if (t.textContent.indexOf((C.mesaLabel||'Mesa') + ' ' + numMesa) !== -1) {
+        t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        break;
+      }
+    }
+  }, 200);
 }
 
 function renderPts() {
